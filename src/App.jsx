@@ -323,6 +323,267 @@ function ShambaBot() {
     </div>
   )
 }
+  
+function Sales() {
+  const [activeTab, setActiveTab] = useState('sales')
+  
+  const [sales, setSales] = useState([
+    { id: 1, item: 'Eggs (30 trays)', total: 12600, buyer: 'Naivas', date: '2026-05-01', cat: 'eggs' },
+    { id: 2, item: 'Kales 80kg', total: 2800, buyer: 'Githurai Market', date: '2026-04-30', cat: 'crops' },
+    { id: 3, item: 'Milk 120L', total: 6600, buyer: 'Brookside', date: '2026-04-28', cat: 'milk' },
+    { id: 4, item: 'Broilers x20', total: 13000, buyer: 'Local butcher', date: '2026-04-25', cat: 'livestock' },
+  ])
+
+  const [expenses, setExpenses] = useState([
+    { id: 1, desc: 'Layer mash - 10 bags', amount: 8500, cat: 'feed', date: '2026-04-28' },
+    { id: 2, desc: 'CAN Fertilizer x4', amount: 6200, cat: 'fertilizer', date: '2026-04-25' },
+    { id: 3, desc: 'Weeding labour', amount: 3600, cat: 'labour', date: '2026-04-20' },
+    { id: 4, desc: 'Newcastle vaccine', amount: 2800, cat: 'vet', date: '2026-04-10' },
+  ])
+
+  const [showForm, setShowForm] = useState(false)
+  const [newSale, setNewSale] = useState({ item: '', total: '', buyer: '', date: '' })
+  const [newExpense, setNewExpense] = useState({ desc: '', amount: '', cat: 'feed', date: '' })
+
+  // ── LESSON 2 IN ACTION: reduce calculating totals ──
+  const totalRevenue = sales.reduce((sum, s) => sum + s.total, 0)
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+  const netProfit = totalRevenue - totalExpenses
+  const profitMargin = totalRevenue > 0 ? Math.round((netProfit / totalRevenue) * 100) : 0
+
+  function addSale() {
+    if (!newSale.item || !newSale.total) { alert('Item and total are required'); return }
+    setSales([{ ...newSale, id: Date.now(), total: parseFloat(newSale.total) }, ...sales])
+    setNewSale({ item: '', total: '', buyer: '', date: '' })
+    setShowForm(false)
+  }
+
+  function addExpense() {
+    if (!newExpense.amount) { alert('Amount is required'); return }
+    setExpenses([{ ...newExpense, id: Date.now(), amount: parseFloat(newExpense.amount) }, ...expenses])
+    setNewExpense({ desc: '', amount: '', cat: 'feed', date: '' })
+    setShowForm(false)
+  }
+
+  function deleteSale(id) { setSales(sales.filter(s => s.id !== id)) }
+  function deleteExpense(id) { setExpenses(expenses.filter(e => e.id !== id)) }
+
+  const inputStyle = {
+    width: '100%', padding: '10px 12px',
+    border: '1.5px solid #e0e0e0', borderRadius: '8px',
+    fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none'
+  }
+  const labelStyle = {
+    fontSize: '13px', fontWeight: '600',
+    display: 'block', marginBottom: '5px'
+  }
+
+  return (
+    <div>
+      {/* Page Header */}
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px' }}>
+          Sales & Expenses
+        </h2>
+        <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '2px' }}>
+          Track your income and spending
+        </p>
+      </div>
+
+      {/* ── LESSON 2 IN ACTION: Metric cards ── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: '12px', marginBottom: '24px'
+      }}>
+        {[
+          { label: 'Total Revenue', value: `KSh ${totalRevenue.toLocaleString()}`, color: '#2e7d32', icon: '💰' },
+          { label: 'Total Expenses', value: `KSh ${totalExpenses.toLocaleString()}`, color: '#ef5350', icon: '📋' },
+          { label: 'Net Profit', value: `KSh ${Math.abs(netProfit).toLocaleString()}`, color: netProfit >= 0 ? '#2e7d32' : '#ef5350', icon: netProfit >= 0 ? '📈' : '📉' },
+          { label: 'Profit Margin', value: `${profitMargin}%`, color: profitMargin >= 0 ? '#0277bd' : '#ef5350', icon: '🎯' },
+        ].map(card => (
+          <div key={card.label} style={{
+            background: 'white', borderRadius: '12px',
+            padding: '16px', border: '1px solid #eeeeee'
+          }}>
+            <div style={{ fontSize: '22px', marginBottom: '6px' }}>{card.icon}</div>
+            <div style={{ fontSize: '11px', color: '#9e9e9e', textTransform: 'uppercase', fontWeight: '600' }}>
+              {card.label}
+            </div>
+            <div style={{ fontSize: '20px', fontWeight: '700', color: card.color, marginTop: '4px' }}>
+              {card.value}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── LESSON 3 IN ACTION: Tab switcher ── */}
+      <div style={{
+        display: 'flex', gap: '0',
+        background: '#f5f5f5', borderRadius: '8px',
+        padding: '4px', marginBottom: '16px',
+        width: 'fit-content'
+      }}>
+        {['sales', 'expenses'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => { setActiveTab(tab); setShowForm(false) }}
+            style={{
+              padding: '8px 20px', border: 'none', borderRadius: '6px',
+              fontFamily: 'Outfit, sans-serif', fontSize: '14px',
+              fontWeight: '600', cursor: 'pointer',
+              // ── LESSON 3: ternary operator deciding styles ──
+              background: activeTab === tab ? 'white' : 'transparent',
+              color: activeTab === tab ? '#1b5e20' : '#9e9e9e',
+              boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            }}
+          >
+            {tab === 'sales' ? '💰 Sales' : '📋 Expenses'}
+          </button>
+        ))}
+      </div>
+
+      {/* Add button */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '14px' }}>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          style={{
+            background: '#2e7d32', color: 'white', border: 'none',
+            borderRadius: '8px', padding: '10px 18px',
+            fontSize: '14px', fontWeight: '600',
+            cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+          }}
+        >
+          {/* ── LESSON 3: && operator ── */}
+          {activeTab === 'sales' ? '+ Record Sale' : '+ Add Expense'}
+        </button>
+      </div>
+
+      {/* ── LESSON 3 IN ACTION: Conditional form ── */}
+      {showForm && activeTab === 'sales' && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>New Sale</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div>
+              <label style={labelStyle}>Item Sold *</label>
+              <input style={inputStyle} value={newSale.item} onChange={e => setNewSale({ ...newSale, item: e.target.value })} placeholder="e.g. Eggs (30 trays)"/>
+            </div>
+            <div>
+              <label style={labelStyle}>Total (KSh) *</label>
+              <input style={inputStyle} type="number" value={newSale.total} onChange={e => setNewSale({ ...newSale, total: e.target.value })} placeholder="0"/>
+            </div>
+            <div>
+              <label style={labelStyle}>Buyer</label>
+              <input style={inputStyle} value={newSale.buyer} onChange={e => setNewSale({ ...newSale, buyer: e.target.value })} placeholder="e.g. Naivas"/>
+            </div>
+            <div>
+              <label style={labelStyle}>Date</label>
+              <input style={inputStyle} type="date" value={newSale.date} onChange={e => setNewSale({ ...newSale, date: e.target.value })}/>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={addSale} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Sale</button>
+            <button onClick={() => setShowForm(false)} style={{ background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {showForm && activeTab === 'expenses' && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>New Expense</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div>
+              <label style={labelStyle}>Description</label>
+              <input style={inputStyle} value={newExpense.desc} onChange={e => setNewExpense({ ...newExpense, desc: e.target.value })} placeholder="e.g. Layer mash 10 bags"/>
+            </div>
+            <div>
+              <label style={labelStyle}>Amount (KSh) *</label>
+              <input style={inputStyle} type="number" value={newExpense.amount} onChange={e => setNewExpense({ ...newExpense, amount: e.target.value })} placeholder="0"/>
+            </div>
+            <div>
+              <label style={labelStyle}>Category</label>
+              <select style={inputStyle} value={newExpense.cat} onChange={e => setNewExpense({ ...newExpense, cat: e.target.value })}>
+                {['feed','fertilizer','seeds','labour','vet','pesticide','equipment','transport','other'].map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Date</label>
+              <input style={inputStyle} type="date" value={newExpense.date} onChange={e => setNewExpense({ ...newExpense, date: e.target.value })}/>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={addExpense} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Expense</button>
+            <button onClick={() => setShowForm(false)} style={{ background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── LESSON 3 IN ACTION: Show sales OR expenses based on tab ── */}
+      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #eeeeee', overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid #eeeeee' }}>
+              {activeTab === 'sales'
+                ? ['Item', 'Buyer', 'Total', 'Date', ''].map(h => (
+                    <th key={h} style={{ fontSize: '11px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', padding: '12px 16px', textAlign: 'left', letterSpacing: '0.05em' }}>{h}</th>
+                  ))
+                : ['Description', 'Category', 'Amount', 'Date', ''].map(h => (
+                    <th key={h} style={{ fontSize: '11px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', padding: '12px 16px', textAlign: 'left', letterSpacing: '0.05em' }}>{h}</th>
+                  ))
+              }
+            </tr>
+          </thead>
+          <tbody>
+            {/* ── LESSON 3: Show sales rows OR expense rows ── */}
+            {activeTab === 'sales'
+              ? sales.map(s => (
+                  <tr key={s.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
+                    <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '600' }}>{s.item}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9e9e9e' }}>{s.buyer || '—'}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '700', color: '#2e7d32' }}>KSh {s.total.toLocaleString()}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9e9e9e' }}>{s.date}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <button onClick={() => deleteSale(s.id)} style={{ background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '12px' }}>🗑️</button>
+                    </td>
+                  </tr>
+                ))
+              : expenses.map(e => (
+                  <tr key={e.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
+                    <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '600' }}>{e.desc}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{ background: '#f5f5f5', color: '#616161', fontSize: '11px', fontWeight: '600', padding: '2px 10px', borderRadius: '99px' }}>{e.cat}</span>
+                    </td>
+                    <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '700', color: '#ef5350' }}>KSh {e.amount.toLocaleString()}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9e9e9e' }}>{e.date}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <button onClick={() => deleteExpense(e.id)} style={{ background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '12px' }}>🗑️</button>
+                    </td>
+                  </tr>
+                ))
+            }
+          </tbody>
+        </table>
+
+        {/* Empty state */}
+        {activeTab === 'sales' && sales.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '48px', color: '#9e9e9e' }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>💰</div>
+            <div style={{ fontSize: '14px' }}>No sales recorded yet</div>
+          </div>
+        )}
+        {activeTab === 'expenses' && expenses.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '48px', color: '#9e9e9e' }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📋</div>
+            <div style={{ fontSize: '14px' }}>No expenses recorded yet</div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 
 function App() {
   const [page, setPage] = useState('dashboard')
@@ -335,6 +596,7 @@ function App() {
           {page === 'dashboard' && <Dashboard />}
           {page === 'crops' && <Crops />}
           {page === 'shamba' && <ShambaBot />}
+          {page === 'sales' && <Sales />}
           {page !== 'dashboard' && page !== 'crops' && page !== 'shamba' && (
             <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', color: '#9e9e9e', border: '1px solid #eeeeee' }}>
               <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚧</div>
