@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 function MetricCard({ icon, label, value, sub, color }) {
   return (
@@ -584,6 +584,235 @@ function Sales() {
   )
 }
 
+function Tasks() {
+  const [tasks, setTasks] = useState([
+    { id: 1, title: 'Vaccinate layers — Newcastle', due: '2026-05-03', priority: 'high', done: false },
+    { id: 2, title: 'Apply CAN to maize field', due: '2026-05-10', priority: 'medium', done: false },
+    { id: 3, title: 'Restock layer mash', due: '2026-05-01', priority: 'high', done: false },
+    { id: 4, title: 'Morning milking', due: '2026-05-07', priority: 'medium', done: true },
+    { id: 5, title: 'Spray tomatoes for blight', due: '2026-05-12', priority: 'medium', done: false },
+  ])
+
+  const [showForm, setShowForm] = useState(false)
+  const [newTask, setNewTask] = useState({ title: '', due: '', priority: 'medium' })
+  const [overdueCount, setOverdueCount] = useState(0)
+
+  // ── useEffect IN ACTION ──────────────────────────────
+  // This runs every time the tasks array changes
+  // It checks for overdue tasks and updates the count
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    const overdue = tasks.filter(t => !t.done && t.due < today)
+    setOverdueCount(overdue.length)
+  }, [tasks]) // the [tasks] means: run this effect when tasks changes
+
+  const today = new Date().toISOString().slice(0, 10)
+
+  // Same logic from our JS lesson — now inside React
+  const pending = tasks.filter(t => !t.done).sort((a, b) => a.due > b.due ? 1 : -1)
+  const completed = tasks.filter(t => t.done)
+  const overdueTasks = tasks.filter(t => !t.done && t.due < today)
+
+  function addTask() {
+    if (!newTask.title) { alert('Task title is required'); return }
+    setTasks([...tasks, { ...newTask, id: Date.now(), done: false }])
+    setNewTask({ title: '', due: '', priority: 'medium' })
+    setShowForm(false)
+  }
+
+  function completeTask(id) {
+    setTasks(tasks.map(t => t.id === id ? { ...t, done: true } : t))
+  }
+
+  function deleteTask(id) {
+    setTasks(tasks.filter(t => t.id !== id))
+  }
+
+  const priorityColor = { low: '#29b6f6', medium: '#ffca28', high: '#ef5350' }
+  const inputStyle = { width: '100%', padding: '10px 12px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none' }
+  const labelStyle = { fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '5px' }
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px' }}>Tasks & Reminders</h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '2px' }}>
+            {pending.length} pending · {completed.length} completed
+          </p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+          + Add Task
+        </button>
+      </div>
+
+      {/* ── useEffect RESULT: Overdue alert banner ── */}
+      {overdueCount > 0 && (
+        <div style={{ background: '#fff8e1', border: '1px solid #ffca28', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '20px' }}>⚠️</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#f57f17' }}>
+              {overdueCount} overdue task{overdueCount > 1 ? 's' : ''} need your attention
+            </div>
+            <div style={{ fontSize: '12px', color: '#f57f17', marginTop: '2px' }}>
+              {overdueTasks.map(t => t.title).join(' · ')}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Task Form */}
+      {showForm && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>New Task</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={labelStyle}>Task Title *</label>
+              <input
+                style={inputStyle}
+                value={newTask.title}
+                onChange={e => setNewTask({ ...newTask, title: e.target.value })}
+                placeholder="e.g. Vaccinate layers"
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Due Date</label>
+              <input
+                style={inputStyle}
+                type="date"
+                value={newTask.due}
+                onChange={e => setNewTask({ ...newTask, due: e.target.value })}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Priority</label>
+              <select
+                style={inputStyle}
+                value={newTask.priority}
+                onChange={e => setNewTask({ ...newTask, priority: e.target.value })}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={addTask} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Task</button>
+            <button onClick={() => setShowForm(false)} style={{ background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Two columns - pending and completed */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+
+        {/* Pending Tasks */}
+        <div>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>
+            Pending ({pending.length})
+          </div>
+
+          {pending.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '32px', color: '#9e9e9e', background: 'white', borderRadius: '12px', border: '1px solid #eeeeee' }}>
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>🎉</div>
+              <div style={{ fontSize: '13px' }}>No pending tasks!</div>
+            </div>
+          )}
+
+          {pending.map(task => {
+            const isOverdue = !task.done && task.due < today
+            return (
+              <div
+                key={task.id}
+                style={{
+                  background: 'white',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  marginBottom: '8px',
+                  border: `1px solid ${isOverdue ? '#ffcdd2' : '#eeeeee'}`,
+                  borderLeft: `4px solid ${isOverdue ? '#ef5350' : priorityColor[task.priority]}`,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                }}
+              >
+                {/* Complete button */}
+                <button
+                  onClick={() => completeTask(task.id)}
+                  style={{
+                    width: '20px', height: '20px', borderRadius: '50%',
+                    border: `2px solid ${priorityColor[task.priority]}`,
+                    background: 'transparent', cursor: 'pointer',
+                    flexShrink: 0, marginTop: '1px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}
+                />
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#212121' }}>
+                    {task.title}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                    <span style={{ fontSize: '11px', color: isOverdue ? '#ef5350' : '#9e9e9e', fontWeight: isOverdue ? '700' : '400' }}>
+                      {isOverdue ? '⚠️ Overdue · ' : ''}{task.due}
+                    </span>
+                    <span style={{ background: priorityColor[task.priority] + '22', color: priorityColor[task.priority], fontSize: '10px', fontWeight: '700', padding: '1px 7px', borderRadius: '99px' }}>
+                      {task.priority}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => deleteTask(task.id)}
+                  style={{ background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontSize: '12px', flexShrink: 0 }}
+                >
+                  🗑️
+                </button>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Completed Tasks */}
+        <div>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>
+            Completed ({completed.length})
+          </div>
+
+          {completed.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '32px', color: '#9e9e9e', background: 'white', borderRadius: '12px', border: '1px solid #eeeeee' }}>
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>📋</div>
+              <div style={{ fontSize: '13px' }}>No completed tasks yet</div>
+            </div>
+          )}
+
+          {completed.map(task => (
+            <div
+              key={task.id}
+              style={{
+                background: 'white', borderRadius: '10px',
+                padding: '12px 14px', marginBottom: '8px',
+                border: '1px solid #eeeeee', opacity: 0.6,
+                display: 'flex', alignItems: 'center', gap: '10px',
+              }}
+            >
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#4caf50', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ color: 'white', fontSize: '11px' }}>✓</span>
+              </div>
+              <div style={{ fontSize: '13px', color: '#9e9e9e', textDecoration: 'line-through', flex: 1 }}>
+                {task.title}
+              </div>
+              <button onClick={() => deleteTask(task.id)} style={{ background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontSize: '12px' }}>🗑️</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 function App() {
   const [page, setPage] = useState('dashboard')
@@ -597,6 +826,7 @@ function App() {
           {page === 'crops' && <Crops />}
           {page === 'shamba' && <ShambaBot />}
           {page === 'sales' && <Sales />}
+          {page === 'tasks' && <Tasks />}
           {page !== 'dashboard' && page !== 'crops' && page !== 'shamba' && (
             <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', color: '#9e9e9e', border: '1px solid #eeeeee' }}>
               <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚧</div>
