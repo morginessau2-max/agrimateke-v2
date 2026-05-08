@@ -813,6 +813,298 @@ function Tasks() {
   )
 }
 
+function Livestock() {
+  const [groups, setGroups] = useState([
+    { id: 1, emoji: '🐔', name: 'Layer Flock A', type: 'Layers', count: 120, eggs: 98, milk: 0, notes: 'Lohmann Brown' },
+    { id: 2, emoji: '🐓', name: 'Broilers Batch 3', type: 'Broilers', count: 220, eggs: 0, milk: 0, notes: 'Ross 308, 4 weeks' },
+    { id: 3, emoji: '🐄', name: 'Dairy Herd', type: 'Dairy', count: 8, eggs: 0, milk: 48, notes: 'Friesian crossbreeds' },
+  ])
+
+  const [records, setRecords] = useState([
+    { id: 1, groupId: 1, type: 'eggs', qty: 98, unit: 'eggs', date: '2026-05-08' },
+    { id: 2, groupId: 3, type: 'milk', qty: 48, unit: 'litres', date: '2026-05-08' },
+    { id: 3, groupId: 2, type: 'feed', qty: 15, unit: 'kg', date: '2026-05-08' },
+  ])
+
+  const [showGroupForm, setShowGroupForm] = useState(false)
+  const [showRecordForm, setShowRecordForm] = useState(false)
+  const [selectedGroup, setSelectedGroup] = useState(null)
+
+  const [newGroup, setNewGroup] = useState({
+    name: '', type: 'Layers', count: '', notes: ''
+  })
+
+  const [newRecord, setNewRecord] = useState({
+    groupId: '', type: 'eggs', qty: '', date: new Date().toISOString().slice(0, 10)
+  })
+
+  // ── LIFTING STATE UP in action ──
+  // These totals are computed from groups
+  // If Dashboard was a sibling it would receive these as props
+  const totalAnimals = groups.reduce((sum, g) => sum + g.count, 0)
+  const totalEggs = groups.reduce((sum, g) => sum + g.eggs, 0)
+  const totalMilk = groups.reduce((sum, g) => sum + g.milk, 0)
+
+  const typeEmoji = {
+    Layers: '🐔', Broilers: '🐓', Dairy: '🐄',
+    Goats: '🐐', Pigs: '🐷', Other: '🐾'
+  }
+
+  function addGroup() {
+    if (!newGroup.name) { alert('Group name is required'); return }
+    const emoji = typeEmoji[newGroup.type] || '🐾'
+    setGroups([...groups, {
+      ...newGroup,
+      id: Date.now(),
+      emoji,
+      count: parseInt(newGroup.count) || 0,
+      eggs: 0,
+      milk: 0
+    }])
+    setNewGroup({ name: '', type: 'Layers', count: '', notes: '' })
+    setShowGroupForm(false)
+  }
+
+  function saveRecord() {
+    if (!newRecord.groupId || !newRecord.qty) {
+      alert('Select a group and enter quantity'); return
+    }
+    const qty = parseFloat(newRecord.qty)
+    const gid = parseInt(newRecord.groupId)
+
+    // Update group daily totals
+    setGroups(groups.map(g => {
+      if (g.id !== gid) return g
+      if (newRecord.type === 'eggs') return { ...g, eggs: qty }
+      if (newRecord.type === 'milk') return { ...g, milk: qty }
+      return g
+    }))
+
+    // Add to records log
+    const group = groups.find(g => g.id === gid)
+    const units = { eggs: 'eggs', milk: 'litres', feed: 'kg', mortality: 'birds', vaccination: 'birds' }
+    setRecords([{
+      id: Date.now(),
+      groupId: gid,
+      groupName: group?.name,
+      type: newRecord.type,
+      qty,
+      unit: units[newRecord.type],
+      date: newRecord.date
+    }, ...records])
+
+    setNewRecord({ groupId: '', type: 'eggs', qty: '', date: new Date().toISOString().slice(0, 10) })
+    setShowRecordForm(false)
+  }
+
+  function deleteGroup(id) {
+    setGroups(groups.filter(g => g.id !== id))
+  }
+
+  const inputStyle = {
+    width: '100%', padding: '10px 12px',
+    border: '1.5px solid #e0e0e0', borderRadius: '8px',
+    fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none'
+  }
+  const labelStyle = {
+    fontSize: '13px', fontWeight: '600',
+    display: 'block', marginBottom: '5px'
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px' }}>Livestock & Poultry</h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '2px' }}>
+            {totalAnimals} animals across {groups.length} groups
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => { setShowRecordForm(!showRecordForm); setShowGroupForm(false) }}
+            style={{ background: 'white', color: '#2e7d32', border: '1.5px solid #2e7d32', borderRadius: '8px', padding: '10px 16px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+          >
+            📋 Record Daily
+          </button>
+          <button
+            onClick={() => { setShowGroupForm(!showGroupForm); setShowRecordForm(false) }}
+            style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+          >
+            + Add Group
+          </button>
+        </div>
+      </div>
+
+      {/* Summary metrics */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+        {[
+          { label: 'Total Animals', value: totalAnimals, icon: '🐾', color: '#212121' },
+          { label: 'Eggs Today', value: totalEggs, icon: '🥚', color: '#2e7d32' },
+          { label: 'Milk Today', value: totalMilk + 'L', icon: '🥛', color: '#0277bd' },
+          { label: 'Groups', value: groups.length, icon: '🏡', color: '#7b1fa2' },
+        ].map(m => (
+          <div key={m.label} style={{ background: 'white', borderRadius: '12px', padding: '14px 16px', border: '1px solid #eeeeee' }}>
+            <div style={{ fontSize: '22px', marginBottom: '6px' }}>{m.icon}</div>
+            <div style={{ fontSize: '11px', color: '#9e9e9e', textTransform: 'uppercase', fontWeight: '600' }}>{m.label}</div>
+            <div style={{ fontSize: '22px', fontWeight: '700', color: m.color, marginTop: '4px' }}>{m.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add Group Form */}
+      {showGroupForm && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>New Livestock Group</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div>
+              <label style={labelStyle}>Group Name *</label>
+              <input style={inputStyle} value={newGroup.name} onChange={e => setNewGroup({ ...newGroup, name: e.target.value })} placeholder="e.g. Layer Flock B"/>
+            </div>
+            <div>
+              <label style={labelStyle}>Type</label>
+              <select style={inputStyle} value={newGroup.type} onChange={e => setNewGroup({ ...newGroup, type: e.target.value })}>
+                {['Layers', 'Broilers', 'Dairy', 'Goats', 'Pigs', 'Other'].map(t => (
+                  <option key={t} value={t}>{typeEmoji[t]} {t}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Number of Animals</label>
+              <input style={inputStyle} type="number" value={newGroup.count} onChange={e => setNewGroup({ ...newGroup, count: e.target.value })} placeholder="100"/>
+            </div>
+            <div>
+              <label style={labelStyle}>Notes (optional)</label>
+              <input style={inputStyle} value={newGroup.notes} onChange={e => setNewGroup({ ...newGroup, notes: e.target.value })} placeholder="Breed, age, etc."/>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={addGroup} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Group</button>
+            <button onClick={() => setShowGroupForm(false)} style={{ background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Record Daily Form */}
+      {showRecordForm && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>Record Daily Production</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div>
+              <label style={labelStyle}>Livestock Group *</label>
+              <select style={inputStyle} value={newRecord.groupId} onChange={e => setNewRecord({ ...newRecord, groupId: e.target.value })}>
+                <option value="">Select group...</option>
+                {groups.map(g => <option key={g.id} value={g.id}>{g.emoji} {g.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Record Type</label>
+              <select style={inputStyle} value={newRecord.type} onChange={e => setNewRecord({ ...newRecord, type: e.target.value })}>
+                <option value="eggs">🥚 Eggs collected</option>
+                <option value="milk">🥛 Milk (litres)</option>
+                <option value="feed">🌾 Feed given (kg)</option>
+                <option value="mortality">💀 Mortality</option>
+                <option value="vaccination">💉 Vaccination</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Quantity</label>
+              <input style={inputStyle} type="number" value={newRecord.qty} onChange={e => setNewRecord({ ...newRecord, qty: e.target.value })} placeholder="0"/>
+            </div>
+            <div>
+              <label style={labelStyle}>Date</label>
+              <input style={inputStyle} type="date" value={newRecord.date} onChange={e => setNewRecord({ ...newRecord, date: e.target.value })}/>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={saveRecord} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Record</button>
+            <button onClick={() => setShowRecordForm(false)} style={{ background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Groups Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+        {groups.map(group => (
+          <div key={group.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #eeeeee' }}>
+            <div style={{ fontSize: '32px', marginBottom: '10px' }}>{group.emoji}</div>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: '#212121' }}>{group.name}</div>
+            <div style={{ fontSize: '12px', color: '#9e9e9e', marginTop: '2px' }}>{group.type}</div>
+            {group.notes && <div style={{ fontSize: '11px', color: '#bdbdbd', marginTop: '4px' }}>{group.notes}</div>}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginTop: '14px' }}>
+              {[
+                { label: 'Count', value: group.count },
+                { label: 'Eggs', value: group.eggs || '—' },
+                { label: 'Milk L', value: group.milk || '—' },
+              ].map(stat => (
+                <div key={stat.label} style={{ background: '#f9fafb', borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '10px', color: '#9e9e9e', fontWeight: '700', textTransform: 'uppercase' }}>{stat.label}</div>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: '#212121', marginTop: '2px' }}>{stat.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+              <button
+                onClick={() => { setSelectedGroup(group.id); setNewRecord({ ...newRecord, groupId: String(group.id) }); setShowRecordForm(true); setShowGroupForm(false) }}
+                style={{ flex: 1, background: '#f1f8f1', color: '#2e7d32', border: '1px solid #a5d6a7', borderRadius: '8px', padding: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+              >
+                📋 Record
+              </button>
+              <button
+                onClick={() => deleteGroup(group.id)}
+                style={{ background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '8px', padding: '8px 12px', cursor: 'pointer', fontSize: '12px' }}
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Records Log */}
+      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #eeeeee', overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #eeeeee', fontSize: '15px', fontWeight: '600' }}>
+          Recent Records
+        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid #eeeeee' }}>
+              {['Group', 'Type', 'Quantity', 'Date'].map(h => (
+                <th key={h} style={{ fontSize: '11px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', padding: '10px 16px', textAlign: 'left', letterSpacing: '0.05em' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {records.slice(0, 8).map(r => (
+              <tr key={r.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
+                <td style={{ padding: '11px 16px', fontSize: '13px', fontWeight: '600' }}>
+                  {r.groupName || groups.find(g => g.id === r.groupId)?.name || '—'}
+                </td>
+                <td style={{ padding: '11px 16px' }}>
+                  <span style={{ background: '#f1f8f1', color: '#2e7d32', fontSize: '11px', fontWeight: '700', padding: '2px 10px', borderRadius: '99px' }}>
+                    {r.type}
+                  </span>
+                </td>
+                <td style={{ padding: '11px 16px', fontSize: '13px', fontWeight: '600', color: '#212121' }}>
+                  {r.qty} {r.unit}
+                </td>
+                <td style={{ padding: '11px 16px', fontSize: '13px', color: '#9e9e9e' }}>
+                  {r.date}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+
+
 
 function App() {
   const [page, setPage] = useState('dashboard')
@@ -827,6 +1119,7 @@ function App() {
           {page === 'shamba' && <ShambaBot />}
           {page === 'sales' && <Sales />}
           {page === 'tasks' && <Tasks />}
+          {page === 'livestock' && <Livestock />}
           {page !== 'dashboard' && page !== 'crops' && page !== 'shamba' && (
             <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', color: '#9e9e9e', border: '1px solid #eeeeee' }}>
               <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚧</div>
