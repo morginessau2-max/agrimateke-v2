@@ -1103,7 +1103,288 @@ function Livestock() {
   )
 }
 
+function Weather() {
+  const [weather, setWeather] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [county, setCounty] = useState('Nairobi')
 
+
+
+const counties = [
+  'Nairobi','Mombasa','Kisumu','Nakuru','Eldoret',
+  'Kiambu','Machakos','Kajiado','Murang\'a','Nyeri',
+  'Kirinyaga','Nyandarua','Laikipia','Meru','Tharaka Nithi',
+  'Embu','Kitui','Machakos','Makueni','Garissa',
+  'Wajir','Mandera','Marsabit','Isiolo','Samburu',
+  'Trans Nzoia','Uasin Gishu','Elgeyo Marakwet','Nandi','Baringo',
+  'Turkana','West Pokot','Kakamega','Vihiga','Bungoma',
+  'Busia','Siaya','Kisumu','Homa Bay','Migori',
+  'Kisii','Nyamira','Bomet','Kericho','Narok',
+  'Taita Taveta','Kwale','Kilifi','Tana River','Lamu'
+]
+
+
+  // ── async/await IN ACTION ────────────────────────────
+  // This runs every time county changes
+  useEffect(() => {
+    async function loadWeather() {
+  setLoading(true)
+  setError(null)
+  try {
+    // ── REAL API KEY ──────────────────────────────────
+    // Replace with your key from openweathermap.org
+    const API_KEY = 'baa6a5ba622c5787415f533de7a9b9ac'
+
+    if (API_KEY !== 'baa6a5ba622c5787415f533de7a9b9ac') {
+      // ── REAL API CALL ─────────────────────────────
+      const [currentRes, forecastRes] = await Promise.all([
+        fetch(`https://api.openweathermap.org/data/2.5/weather?q=${county},KE&appid=${API_KEY}&units=metric`),
+        fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${county},KE&appid=${API_KEY}&units=metric&cnt=7`)
+      ])
+
+      const current = await currentRes.json()
+      const forecastData = await forecastRes.json()
+
+      const conditionMap = {
+        'Clear': '☀️', 'Clouds': '⛅', 'Rain': '🌧️',
+        'Drizzle': '🌦️', 'Thunderstorm': '⛈️',
+        'Snow': '❄️', 'Mist': '🌫️', 'Fog': '🌫️',
+        'Haze': '🌫️', 'Dust': '💨', 'Smoke': '💨'
+      }
+
+      const weatherIcon = conditionMap[current.weather[0].main] || '🌤️'
+      const condition = current.weather[0].description
+        .split(' ')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ')
+
+      const forecast = forecastData.list.slice(0, 7).map((item, i) => {
+        const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+        const date = new Date(item.dt * 1000)
+        return {
+          day: days[date.getDay()],
+          icon: conditionMap[item.weather[0].main] || '🌤️',
+          high: Math.round(item.main.temp_max),
+          low: Math.round(item.main.temp_min),
+          rain: item.pop ? Math.round(item.pop * 100) + '%' : '0%'
+        }
+      })
+
+      setWeather({
+        county,
+        temp: Math.round(current.main.temp),
+        condition,
+        humidity: current.main.humidity,
+        wind: Math.round(current.wind.speed * 3.6),
+        icon: weatherIcon,
+        forecast,
+        advisory: getAdvisory(condition)
+      })
+
+    } else {
+      // ── MOCK DATA (until you add your API key) ────
+      await new Promise(r => setTimeout(r, 600))
+      const mockData = {
+        Nairobi:   { temp: 22, condition: 'Partly Cloudy', humidity: 68, wind: 14, icon: '⛅' },
+        Kiambu:    { temp: 20, condition: 'Light Rain', humidity: 75, wind: 10, icon: '🌧️' },
+        Nakuru:    { temp: 25, condition: 'Sunny', humidity: 55, wind: 18, icon: '☀️' },
+        Meru:      { temp: 19, condition: 'Cloudy', humidity: 72, wind: 8, icon: '☁️' },
+        Kisumu:    { temp: 30, condition: 'Hot and Sunny', humidity: 60, wind: 12, icon: '☀️' },
+        Machakos:  { temp: 27, condition: 'Sunny', humidity: 50, wind: 16, icon: '☀️' },
+        Kakamega:  { temp: 24, condition: 'Thunderstorm', humidity: 85, wind: 20, icon: '⛈️' },
+        Mombasa:   { temp: 32, condition: 'Hot and Humid', humidity: 88, wind: 15, icon: '🌤️' },
+        Eldoret:   { temp: 16, condition: 'Cool and Cloudy', humidity: 65, wind: 25, icon: '☁️' },
+        Nyeri:     { temp: 17, condition: 'Misty', humidity: 80, wind: 6, icon: '🌫️' },
+        Turkana:   { temp: 38, condition: 'Very Hot', humidity: 20, wind: 30, icon: '🔥' },
+        Lamu:      { temp: 31, condition: 'Coastal Breeze', humidity: 82, wind: 18, icon: '🌤️' },
+      }
+      const current = mockData[county] || { temp: 24, condition: 'Partly Cloudy', humidity: 65, wind: 12, icon: '⛅' }
+      setWeather({
+        county,
+        ...current,
+        forecast: [
+          { day: 'Thu', icon: '⛅', high: 23, low: 15, rain: '20%' },
+          { day: 'Fri', icon: '🌧️', high: 19, low: 14, rain: '80%' },
+          { day: 'Sat', icon: '🌧️', high: 18, low: 13, rain: '75%' },
+          { day: 'Sun', icon: '🌤️', high: 21, low: 14, rain: '15%' },
+          { day: 'Mon', icon: '☀️', high: 25, low: 16, rain: '5%' },
+          { day: 'Tue', icon: '☀️', high: 26, low: 17, rain: '5%' },
+          { day: 'Wed', icon: '⛅', high: 24, low: 15, rain: '25%' },
+        ],
+        advisory: getAdvisory(current.condition)
+      })
+    }
+  } catch (err) {
+    setError('Failed to load weather. Check your connection and try again.')
+  } finally {
+    setLoading(false)
+  }
+}
+    
+  loadWeather()
+  }, [county])
+
+  function getAdvisory(condition) {
+    if (condition.includes('Rain') || condition.includes('Thunder')) {
+      return [
+        { icon: '🌧️', type: 'warning', title: 'Rain expected', body: 'Harvest kales and other leafy vegetables before the rain. Delay fertilizer application.' },
+        { icon: '⚠️', type: 'warning', title: 'Blight risk elevated', body: 'High humidity increases tomato blight risk. Apply Ridomil or copper fungicide today.' },
+        { icon: '💧', type: 'info', title: 'Delay irrigation', body: 'No need to irrigate today — rain will provide adequate moisture.' },
+      ]
+    }
+    if (condition.includes('Sunny') || condition.includes('Hot')) {
+      return [
+        { icon: '☀️', type: 'success', title: 'Great harvesting day', body: 'Perfect conditions for harvesting and drying produce. Plan your market run.' },
+        { icon: '💧', type: 'warning', title: 'Irrigation needed', body: 'Hot and dry conditions — ensure all crops are well irrigated, especially tomatoes.' },
+        { icon: '🐄', type: 'info', title: 'Check livestock water', body: 'Ensure all livestock have access to clean, cool water throughout the day.' },
+      ]
+    }
+    return [
+      { icon: '🌿', type: 'success', title: 'Good farming conditions', body: 'Moderate weather — good day for planting, spraying, and general farm maintenance.' },
+      { icon: '📅', type: 'info', title: 'Plan ahead', body: 'Check the 7-day forecast to plan your irrigation and harvesting schedule.' },
+    ]
+  }
+
+  const advisoryColors = {
+    warning: { bg: '#fff8e1', border: '#ffca28', text: '#f57f17' },
+    info:    { bg: '#e1f5fe', border: '#29b6f6', text: '#0277bd' },
+    success: { bg: '#f1f8f1', border: '#a5d6a7', text: '#2e7d32' },
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px' }}>Weather</h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '2px' }}>
+            Live conditions and farming advisory
+          </p>
+        </div>
+        <select
+          value={county}
+          onChange={e => setCounty(e.target.value)}
+          style={{ padding: '10px 14px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none', cursor: 'pointer' }}
+        >
+          {counties.map(c => <option key={c} value={c}>📍 {c}</option>)}
+        </select>
+      </div>
+
+      {/* Loading state */}
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '80px', color: '#9e9e9e' }}>
+          <div style={{ fontSize: '40px', marginBottom: '12px' }}>🌤️</div>
+          <div style={{ fontSize: '14px' }}>Loading weather for {county}...</div>
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <div style={{ background: '#ffebee', border: '1px solid #ffcdd2', borderRadius: '12px', padding: '16px', color: '#c62828', marginBottom: '16px' }}>
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Weather content */}
+      {!loading && weather && (
+        <>
+          {/* Current weather banner */}
+          <div style={{
+            background: 'linear-gradient(135deg, #1565c0, #1976d2, #42a5f5)',
+            borderRadius: '16px', padding: '24px', color: 'white',
+            marginBottom: '20px', position: 'relative', overflow: 'hidden'
+          }}>
+            <div style={{ position: 'absolute', right: '-20px', bottom: '-20px', fontSize: '120px', opacity: 0.08, lineHeight: 1 }}>
+              {weather.icon}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <div style={{ fontSize: '13px', opacity: 0.75, marginBottom: '6px' }}>
+                  📍 {weather.county}, Kenya
+                </div>
+                <div style={{ fontSize: '64px', fontWeight: '300', lineHeight: 1, fontFamily: 'DM Serif Display, serif' }}>
+                  {weather.temp}°C
+                </div>
+                <div style={{ fontSize: '18px', marginTop: '6px', opacity: 0.9 }}>
+                  {weather.icon} {weather.condition}
+                </div>
+                <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '13px', opacity: 0.75 }}>
+                  <span>💧 {weather.humidity}%</span>
+                  <span>💨 {weather.wind} km/h</span>
+                </div>
+              </div>
+              <div style={{ fontSize: '80px', lineHeight: 1 }}>{weather.icon}</div>
+            </div>
+
+            {/* 7 day forecast */}
+            <div style={{ display: 'flex', gap: '6px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+              {weather.forecast.map(f => (
+                <div key={f.day} style={{ flex: 1, textAlign: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px 4px' }}>
+                  <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '4px' }}>{f.day}</div>
+                  <div style={{ fontSize: '18px', marginBottom: '4px' }}>{f.icon}</div>
+                  <div style={{ fontSize: '12px', fontWeight: '700' }}>{f.high}°</div>
+                  <div style={{ fontSize: '10px', opacity: 0.6 }}>{f.low}°</div>
+                  <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '2px' }}>{f.rain}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Farming Advisory */}
+          <div style={{ marginBottom: '6px' }}>
+            <div style={{ fontSize: '15px', fontWeight: '600', color: '#212121', marginBottom: '12px' }}>
+              🌱 Farming Advisory
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+  {weather.advisory.map((a, i) => {
+  const colors = advisoryColors[a.type]
+  return (
+    <div
+      key={i}
+      onClick={() => {
+        if (a.title.toLowerCase().includes('plan ahead') || a.title.toLowerCase().includes('forecast')) {
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+      }}
+      style={{
+        background: colors.bg,
+        border: `1px solid ${colors.border}`,
+        borderRadius: '10px',
+        padding: '14px 16px',
+        cursor: a.title.toLowerCase().includes('plan') ? 'pointer' : 'default',
+        transition: 'transform 0.15s',
+      }}
+      onMouseEnter={e => {
+        if (a.title.toLowerCase().includes('plan')) {
+          e.currentTarget.style.transform = 'translateY(-2px)'
+        }
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = 'translateY(0)'
+      }}
+    >
+      <div style={{ fontSize: '13px', fontWeight: '700', color: colors.text }}>
+        {a.icon} {a.title}
+      </div>
+      <div style={{ fontSize: '12px', color: colors.text, opacity: 0.85, marginTop: '4px', lineHeight: 1.6 }}>
+        {a.body}
+      </div>
+      {a.title.toLowerCase().includes('plan') && (
+        <div style={{ fontSize: '11px', fontWeight: '700', color: colors.text, marginTop: '6px', opacity: 0.7 }}>
+          ↑ Click to view forecast
+        </div>
+      )}
+    </div>
+  )
+})}            
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 
 function App() {
@@ -1119,7 +1400,8 @@ function App() {
           {page === 'shamba' && <ShambaBot />}
           {page === 'sales' && <Sales />}
           {page === 'tasks' && <Tasks />}
-          {page === 'livestock' && <Livestock />}
+          {page === 'livestock' && <Livestock />} 
+          {page === 'weather' && <Weather />}
           {page !== 'dashboard' && page !== 'crops' && page !== 'shamba' && (
             <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', color: '#9e9e9e', border: '1px solid #eeeeee' }}>
               <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚧</div>
