@@ -1385,6 +1385,290 @@ const counties = [
     </div>
   )
 }
+function MarketPrices() {
+  const [region, setRegion] = useState('Nairobi')
+  const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('default')
+  const [filterTrend, setFilterTrend] = useState('all')
+  const [loading, setLoading] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(
+    new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  )
+
+  const allPrices = {
+    Nairobi: [
+      { id:1, commodity:'Maize', price:3800, unit:'90kg bag', trend:'up', change:'+3%', market:'Wakulima Market' },
+      { id:2, commodity:'Tomatoes', price:6200, unit:'crate', trend:'up', change:'+12%', market:'Wakulima Market' },
+      { id:3, commodity:'Kales (Sukuma)', price:35, unit:'kg', trend:'down', change:'-5%', market:'Githurai Market' },
+      { id:4, commodity:'Beans (Rosecoco)', price:9500, unit:'90kg bag', trend:'stable', change:'0%', market:'Wakulima Market' },
+      { id:5, commodity:'Potatoes (Irish)', price:3200, unit:'90kg bag', trend:'up', change:'+7%', market:'Wakulima Market' },
+      { id:6, commodity:'Avocado (Hass)', price:25, unit:'fruit', trend:'up', change:'+15%', market:'Limuru Road' },
+      { id:7, commodity:'Eggs', price:14, unit:'egg', trend:'up', change:'+1%', market:'Nairobi Wholesale' },
+      { id:8, commodity:'Milk', price:55, unit:'litre', trend:'stable', change:'0%', market:'Brookside' },
+      { id:9, commodity:'Cabbage', price:42, unit:'head', trend:'down', change:'-8%', market:'Githurai Market' },
+      { id:10, commodity:'Onions', price:85, unit:'kg', trend:'up', change:'+6%', market:'Wakulima Market' },
+    ],
+    Nakuru: [
+      { id:11, commodity:'Maize', price:3200, unit:'90kg bag', trend:'up', change:'+5%', market:'Nakuru Town Market' },
+      { id:12, commodity:'Tomatoes', price:5500, unit:'crate', trend:'down', change:'-3%', market:'Nakuru Town Market' },
+      { id:13, commodity:'Beans', price:7800, unit:'90kg bag', trend:'up', change:'+8%', market:'Nakuru Town Market' },
+      { id:14, commodity:'Kales', price:28, unit:'kg', trend:'up', change:'+2%', market:'Nakuru Town Market' },
+      { id:15, commodity:'Milk', price:52, unit:'litre', trend:'stable', change:'0%', market:'Brookside Nakuru' },
+      { id:16, commodity:'Potatoes', price:2800, unit:'90kg bag', trend:'up', change:'+4%', market:'Nakuru Town Market' },
+      { id:17, commodity:'Carrots', price:45, unit:'kg', trend:'up', change:'+10%', market:'Nakuru Town Market' },
+      { id:18, commodity:'Eggs', price:13, unit:'egg', trend:'stable', change:'0%', market:'Nakuru Wholesale' },
+    ],
+    Mombasa: [
+      { id:19, commodity:'Maize', price:4100, unit:'90kg bag', trend:'up', change:'+2%', market:'Kongowea Market' },
+      { id:20, commodity:'Tomatoes', price:7000, unit:'crate', trend:'up', change:'+10%', market:'Kongowea Market' },
+      { id:21, commodity:'Onions', price:90, unit:'kg', trend:'down', change:'-8%', market:'Kongowea Market' },
+      { id:22, commodity:'Cassava', price:45, unit:'kg', trend:'stable', change:'0%', market:'Kongowea Market' },
+      { id:23, commodity:'Coconut', price:30, unit:'piece', trend:'up', change:'+5%', market:'Mombasa Wholesale' },
+      { id:24, commodity:'Fish (Tilapia)', price:380, unit:'kg', trend:'up', change:'+8%', market:'Kongowea Market' },
+      { id:25, commodity:'Mangoes', price:15, unit:'piece', trend:'down', change:'-10%', market:'Kongowea Market' },
+    ],
+    Kisumu: [
+      { id:26, commodity:'Maize', price:3500, unit:'90kg bag', trend:'up', change:'+4%', market:'Kibuye Market' },
+      { id:27, commodity:'Fish (Omena)', price:220, unit:'kg', trend:'stable', change:'0%', market:'Dunga Beach' },
+      { id:28, commodity:'Fish (Tilapia)', price:350, unit:'kg', trend:'up', change:'+6%', market:'Kibuye Market' },
+      { id:29, commodity:'Beans', price:8000, unit:'90kg bag', trend:'up', change:'+5%', market:'Kibuye Market' },
+      { id:30, commodity:'Tomatoes', price:5800, unit:'crate', trend:'up', change:'+7%', market:'Kibuye Market' },
+      { id:31, commodity:'Sugar Cane', price:50, unit:'piece', trend:'stable', change:'0%', market:'Kisumu Wholesale' },
+    ],
+    Eldoret: [
+      { id:32, commodity:'Maize', price:3000, unit:'90kg bag', trend:'up', change:'+6%', market:'Eldoret Town Market' },
+      { id:33, commodity:'Wheat', price:4200, unit:'90kg bag', trend:'up', change:'+9%', market:'Eldoret Town Market' },
+      { id:34, commodity:'Milk', price:48, unit:'litre', trend:'stable', change:'0%', market:'KCC Eldoret' },
+      { id:35, commodity:'Beans', price:7500, unit:'90kg bag', trend:'stable', change:'0%', market:'Eldoret Town Market' },
+      { id:36, commodity:'Potatoes', price:2600, unit:'90kg bag', trend:'up', change:'+3%', market:'Eldoret Town Market' },
+      { id:37, commodity:'Eggs', price:13, unit:'egg', trend:'up', change:'+2%', market:'Eldoret Wholesale' },
+    ],
+  }
+
+  const regions = Object.keys(allPrices)
+
+  // ── FILTERING + SEARCHING + SORTING in action ──────
+  let prices = allPrices[region] || []
+
+  // Search filter
+  if (search) {
+    prices = prices.filter(p =>
+      p.commodity.toLowerCase().includes(search.toLowerCase())
+    )
+  }
+
+  // Trend filter
+  if (filterTrend !== 'all') {
+    prices = prices.filter(p => p.trend === filterTrend)
+  }
+
+  // Sort
+  if (sortBy === 'price-high') prices = [...prices].sort((a, b) => b.price - a.price)
+  if (sortBy === 'price-low') prices = [...prices].sort((a, b) => a.price - b.price)
+  if (sortBy === 'name') prices = [...prices].sort((a, b) => a.commodity.localeCompare(b.commodity))
+
+  // Best opportunity — highest upward trend
+  const bestOpportunity = (allPrices[region] || [])
+    .filter(p => p.trend === 'up')
+    .sort((a, b) => parseFloat(b.change) - parseFloat(a.change))[0]
+
+  function refresh() {
+    setLoading(true)
+    setTimeout(() => {
+      setLoading(false)
+      setLastUpdated(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
+    }, 800)
+  }
+
+  const trendIcon = { up: '📈', down: '📉', stable: '➡️' }
+  const trendColor = { up: '#2e7d32', down: '#ef5350', stable: '#0277bd' }
+  const trendBg = { up: '#f1f8f1', down: '#ffebee', stable: '#e1f5fe' }
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px' }}>Market Prices</h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '2px' }}>
+            Live commodity prices from major Kenyan markets
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#9e9e9e' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4caf50', animation: 'pulse 2s ease infinite' }}/>
+            Updated {lastUpdated}
+          </div>
+          <button
+            onClick={refresh}
+            style={{ background: 'white', color: '#2e7d32', border: '1.5px solid #2e7d32', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+          >
+            {loading ? '🔄 Loading...' : '🔄 Refresh'}
+          </button>
+        </div>
+      </div>
+
+      {/* Best opportunity banner */}
+      {bestOpportunity && (
+        <div style={{ background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', borderRadius: '12px', padding: '14px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px', color: 'white' }}>
+          <span style={{ fontSize: '24px' }}>🤖</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '13px', fontWeight: '700' }}>Shamba Bot Market Insight</div>
+            <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '3px', lineHeight: 1.5 }}>
+              Best opportunity in {region} today: <strong>{bestOpportunity.commodity}</strong> at <strong>KSh {bestOpportunity.price.toLocaleString()}</strong> per {bestOpportunity.unit} ({bestOpportunity.change} this week). Consider selling now if you have stock.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Controls */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        {/* Region selector */}
+        <select
+          value={region}
+          onChange={e => { setRegion(e.target.value); setSearch('') }}
+          style={{ padding: '10px 14px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none', cursor: 'pointer', background: 'white' }}
+        >
+          {regions.map(r => <option key={r} value={r}>📍 {r}</option>)}
+        </select>
+
+        {/* Search */}
+        <div style={{ flex: 1, position: 'relative', minWidth: '180px' }}>
+          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9e9e9e', fontSize: '14px' }}>🔍</span>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search commodity..."
+            style={{ width: '100%', padding: '10px 12px 10px 34px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none' }}
+          />
+        </div>
+
+        {/* Trend filter */}
+        <select
+          value={filterTrend}
+          onChange={e => setFilterTrend(e.target.value)}
+          style={{ padding: '10px 14px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none', cursor: 'pointer', background: 'white' }}
+        >
+          <option value="all">All trends</option>
+          <option value="up">📈 Rising only</option>
+          <option value="down">📉 Falling only</option>
+          <option value="stable">➡️ Stable only</option>
+        </select>
+
+        {/* Sort */}
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value)}
+          style={{ padding: '10px 14px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none', cursor: 'pointer', background: 'white' }}
+        >
+          <option value="default">Default order</option>
+          <option value="price-high">Price: High → Low</option>
+          <option value="price-low">Price: Low → High</option>
+          <option value="name">Name: A → Z</option>
+        </select>
+      </div>
+
+      {/* Results count */}
+      <div style={{ fontSize: '12px', color: '#9e9e9e', marginBottom: '10px', fontWeight: '600' }}>
+        Showing {prices.length} commodit{prices.length === 1 ? 'y' : 'ies'} in {region}
+        {search && ` matching "${search}"`}
+        {filterTrend !== 'all' && ` · ${filterTrend} trend only`}
+      </div>
+
+      {/* Prices table */}
+      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #eeeeee', overflow: 'hidden', marginBottom: '20px' }}>
+        {/* Table header */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1.5fr', padding: '10px 16px', borderBottom: '1px solid #eeeeee', background: '#f9fafb' }}>
+          {['Commodity', 'Market', 'Price', 'Trend', 'Change'].map(h => (
+            <div key={h} style={{ fontSize: '11px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
+          ))}
+        </div>
+
+        {/* Price rows */}
+        {prices.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '48px', color: '#9e9e9e' }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔍</div>
+            <div style={{ fontSize: '14px' }}>No commodities found</div>
+            <div style={{ fontSize: '12px', marginTop: '4px' }}>Try a different search or region</div>
+          </div>
+        ) : (
+          prices.map((p, index) => (
+            <div
+              key={p.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1.5fr',
+                padding: '14px 16px',
+                borderBottom: index < prices.length - 1 ? '1px solid #f5f5f5' : 'none',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#212121' }}>{p.commodity}</div>
+              <div style={{ fontSize: '12px', color: '#9e9e9e', alignSelf: 'center' }}>{p.market}</div>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: '700', color: '#212121' }}>
+                  KSh {p.price.toLocaleString()}
+                </div>
+                <div style={{ fontSize: '10px', color: '#9e9e9e' }}>per {p.unit}</div>
+              </div>
+              <div style={{ alignSelf: 'center' }}>
+                <span style={{ fontSize: '16px' }}>{trendIcon[p.trend]}</span>
+              </div>
+              <div style={{ alignSelf: 'center' }}>
+                <span style={{
+                  background: trendBg[p.trend],
+                  color: trendColor[p.trend],
+                  fontSize: '12px', fontWeight: '700',
+                  padding: '4px 10px', borderRadius: '99px'
+                }}>
+                  {p.change}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Compare across regions */}
+      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #eeeeee', padding: '20px' }}>
+        <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '14px' }}>
+          🗺️ Maize Price Comparison — All Regions
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {regions.map(r => {
+            const maize = (allPrices[r] || []).find(p => p.commodity.toLowerCase().includes('maize'))
+            if (!maize) return null
+            const maxPrice = 4200
+            const pct = Math.round((maize.price / maxPrice) * 100)
+            return (
+              <div key={r} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '70px', fontSize: '13px', fontWeight: '600', color: '#424242' }}>{r}</div>
+                <div style={{ flex: 1, height: '8px', background: '#f5f5f5', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: `${pct}%`, height: '100%', background: r === region ? '#2e7d32' : '#a5d6a7', borderRadius: '4px', transition: 'width 0.5s ease' }} />
+                </div>
+                <div style={{ width: '80px', fontSize: '13px', fontWeight: '700', color: r === region ? '#2e7d32' : '#424242', textAlign: 'right' }}>
+                  KSh {maize.price.toLocaleString()}
+                </div>
+                {r === region && (
+                  <span style={{ fontSize: '10px', background: '#f1f8f1', color: '#2e7d32', padding: '2px 8px', borderRadius: '99px', fontWeight: '700' }}>Current</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        <div style={{ fontSize: '11px', color: '#9e9e9e', marginTop: '12px' }}>
+          💡 Tip: Maize prices are highest in Mombasa due to transport costs. Sell there if logistics allow.
+        </div>
+      </div>
+
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+    </div>
+  )
+}
+
+
 
 
 function App() {
@@ -1402,6 +1686,7 @@ function App() {
           {page === 'tasks' && <Tasks />}
           {page === 'livestock' && <Livestock />} 
           {page === 'weather' && <Weather />}
+          {page === 'market' && <MarketPrices />}
           {page !== 'dashboard' && page !== 'crops' && page !== 'shamba' && (
             <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', color: '#9e9e9e', border: '1px solid #eeeeee' }}>
               <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚧</div>
