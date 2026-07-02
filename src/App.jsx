@@ -1,5 +1,21 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
+// ─────────────────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────────────────
+function fmt(n) { return 'KSh ' + Math.abs(n).toLocaleString() }
+function nid() { return Date.now() + Math.random() }
+function today() { return new Date().toISOString().slice(0, 10) }
+function greet() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+// ─────────────────────────────────────────────────────────
+//  METRIC CARD
+// ─────────────────────────────────────────────────────────
 function MetricCard({ icon, label, value, sub, color }) {
   return (
     <div style={{
@@ -15,25 +31,29 @@ function MetricCard({ icon, label, value, sub, color }) {
   )
 }
 
-function Sidebar({ activePage, onNavigate }) {
+// ─────────────────────────────────────────────────────────
+//  SIDEBAR
+// ─────────────────────────────────────────────────────────
+function Sidebar({ activePage, onNavigate, userName }) {
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'crops', label: 'My Crops', icon: '🌿' },
-    { id: 'livestock', label: 'Livestock', icon: '🐄' },
-    { id: 'sales', label: 'Sales & Expenses', icon: '💰' },
-    { id: 'tasks', label: 'Tasks', icon: '✅' },
-    { id: 'weather', label: 'Weather', icon: '🌦️' },
-    { id: 'market', label: 'Market Prices', icon: '📈' },
-    { id: 'shamba', label: 'Shamba Bot', icon: '🤖' },
-    { id: 'vets', label: 'Vet Directory', icon: '🏥' },
-    { id: 'grants', label: 'Govt Grants', icon: '📋' },
-    { id: 'settings', label: 'Settings', icon: '⚙️' },
+    { id: 'dashboard', label: 'Dashboard',      icon: '📊' },
+    { id: 'crops',     label: 'My Crops',        icon: '🌿' },
+    { id: 'livestock', label: 'Livestock',        icon: '🐄' },
+    { id: 'sales',     label: 'Sales & Expenses', icon: '💰' },
+    { id: 'tasks',     label: 'Tasks',            icon: '✅' },
+    { id: 'weather',   label: 'Weather',          icon: '🌦️' },
+    { id: 'market',    label: 'Market Prices',    icon: '📈' },
+    { id: 'shamba',    label: 'Shamba Bot',       icon: '🤖' },
+    { id: 'vets',      label: 'Vet Directory',    icon: '🏥' },
+    { id: 'grants',    label: 'Govt Grants',      icon: '📋' },
+    { id: 'settings',  label: 'Settings',         icon: '⚙️' },
   ]
   return (
     <aside style={{
-      width: '240px', background: 'linear-gradient(180deg, #1b5e20 0%, #1e5c22 100%)',
-      display: 'flex', flexDirection: 'column', height: '100vh',
-      position: 'fixed', left: 0, top: 0,
+      width: '240px',
+      background: 'linear-gradient(180deg, #1b5e20 0%, #1e5c22 100%)',
+      display: 'flex', flexDirection: 'column',
+      height: '100vh', position: 'fixed', left: 0, top: 0,
     }}>
       <div style={{ padding: '22px 20px 14px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: '22px', color: 'white' }}>🌱 AgriMateKE</div>
@@ -56,9 +76,16 @@ function Sidebar({ activePage, onNavigate }) {
       </nav>
       <div style={{ padding: '12px 8px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px' }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#4caf50', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '14px' }}>E</div>
+          <div style={{
+            width: '32px', height: '32px', borderRadius: '50%',
+            background: '#4caf50', color: 'white',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: '700', fontSize: '14px'
+          }}>
+            {userName ? userName[0].toUpperCase() : '?'}
+          </div>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.9)' }}>Essau Morgin</div>
+            <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.9)' }}>{userName || 'Farmer'}</div>
             <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>Free Plan</div>
           </div>
         </div>
@@ -67,6 +94,9 @@ function Sidebar({ activePage, onNavigate }) {
   )
 }
 
+// ─────────────────────────────────────────────────────────
+//  TOPBAR
+// ─────────────────────────────────────────────────────────
 function Topbar({ page }) {
   const titles = {
     dashboard: 'Dashboard', crops: 'My Crops', livestock: 'Livestock',
@@ -82,9 +112,7 @@ function Topbar({ page }) {
       boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
       position: 'fixed', top: 0, left: '240px', right: 0, zIndex: 10,
     }}>
-      <div style={{ fontSize: '17px', fontWeight: '600', color: '#212121' }}>
-        {titles[page] || 'AgriMateKE'}
-      </div>
+      <div style={{ fontSize: '17px', fontWeight: '600', color: '#212121' }}>{titles[page] || 'AgriMateKE'}</div>
       <button style={{
         padding: '6px 14px', background: 'linear-gradient(135deg, #f57f17, #ff8f00)',
         color: 'white', border: 'none', borderRadius: '8px',
@@ -94,1606 +122,1582 @@ function Topbar({ page }) {
   )
 }
 
-function Dashboard() {
-  const farmData = {
-    todayRevenue: 4200,
-    netProfit: 13900,
-    activeCrops: 3,
-    pendingTasks: 4,
-    overdueTasks: 2,
-  }
+// ─────────────────────────────────────────────────────────
+//  COMING SOON
+// ─────────────────────────────────────────────────────────
+function ComingSoon({ page }) {
+  return (
+    <div style={{
+      background: 'white', borderRadius: '16px', padding: '48px',
+      textAlign: 'center', color: '#9e9e9e', border: '1px solid #eeeeee'
+    }}>
+      <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚧</div>
+      <div style={{ fontSize: '16px', fontWeight: '600', color: '#424242' }}>{page} — Coming Soon</div>
+      <div style={{ fontSize: '13px', marginTop: '6px' }}>We are building this module. Check back soon!</div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+//  INPUT STYLE
+// ─────────────────────────────────────────────────────────
+const inputStyle = {
+  padding: '10px 12px', border: '1.5px solid #e0e0e0',
+  borderRadius: '8px', fontFamily: 'Outfit, sans-serif',
+  fontSize: '14px', color: '#212121', outline: 'none', width: '100%',
+}
+
+// ─────────────────────────────────────────────────────────
+//  DASHBOARD
+// ─────────────────────────────────────────────────────────
+function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate }) {
+  const now = today()
+  const activeCrops   = crops.filter(c => c.stage !== 'harvested').length
+  const readyCrops    = crops.filter(c => c.stage === 'ready').length
+  const pendingTasks  = tasks.filter(t => !t.done).length
+  const overdueTasks  = tasks.filter(t => !t.done && t.due && t.due < now).length
+  const totalRevenue  = sales.reduce((sum, s) => sum + s.total, 0)
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+  const netProfit     = totalRevenue - totalExpenses
+
   return (
     <div>
-      <div style={{ marginBottom: '16px' }}>
+      <div style={{ marginBottom: '20px' }}>
         <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '26px', color: '#212121' }}>
-          Good morning, Essau 👋
+          {greet()}, {userName} 👋
         </h2>
         <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '4px' }}>
           {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-        <MetricCard icon="💰" label="Today's Revenue" value={`KSh ${farmData.todayRevenue.toLocaleString()}`} sub="From sales today" color="#2e7d32" />
-        <MetricCard icon="📈" label="Net Profit (Month)" value={`KSh ${farmData.netProfit.toLocaleString()}`} sub="After all expenses" color="#2e7d32" />
-        <MetricCard icon="🌿" label="Active Crops" value={farmData.activeCrops} sub="1 ready to harvest" color="#0277bd" />
-        <MetricCard icon="✅" label="Pending Tasks" value={farmData.pendingTasks} sub={`${farmData.overdueTasks} overdue`} color="#ef5350" />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', border: '1px solid #eeeeee' }}>
-          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>Revenue — Last 7 Days</div>
-          <div style={{ height: '140px', background: '#f5f5f5', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9e9e9e', fontSize: '13px' }}>
-            📊 Chart coming next session
+
+      {overdueTasks > 0 && (
+        <div style={{
+          background: '#fff8e1', border: '1px solid #ffca28',
+          borderRadius: '10px', padding: '12px 16px',
+          marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px'
+        }}>
+          <span style={{ fontSize: '20px' }}>⚠️</span>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#f57f17' }}>
+              {overdueTasks} overdue task{overdueTasks > 1 ? 's' : ''} need attention
+            </div>
+            <div style={{ fontSize: '12px', color: '#f57f17', marginTop: '2px' }}>
+              {tasks.filter(t => !t.done && t.due && t.due < now).map(t => t.title).join(' · ')}
+            </div>
           </div>
         </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+        <MetricCard icon="💰" label="Total Revenue" value={fmt(totalRevenue)} sub={totalRevenue === 0 ? 'Record a sale to start' : 'All time'} color="#2e7d32" />
+        <MetricCard icon="📈" label="Net Profit" value={fmt(netProfit)} sub={netProfit >= 0 ? 'Profit' : 'Running at a loss'} color={netProfit >= 0 ? '#2e7d32' : '#ef5350'} />
+        <MetricCard icon="🌿" label="Active Crops" value={activeCrops} sub={readyCrops > 0 ? `${readyCrops} ready to harvest` : 'Add your first crop'} color="#0277bd" />
+        <MetricCard icon="✅" label="Pending Tasks" value={pendingTasks} sub={overdueTasks > 0 ? `${overdueTasks} overdue` : pendingTasks === 0 ? 'All done! 🎉' : 'On track'} color={overdueTasks > 0 ? '#ef5350' : '#2e7d32'} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '14px' }}>Today's Tasks</div>
+          {pendingTasks === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px', color: '#9e9e9e' }}>
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>🎉</div>
+              <div style={{ fontSize: '13px' }}>No pending tasks</div>
+            </div>
+          ) : tasks.filter(t => !t.done).slice(0, 4).map(task => (
+            <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0', borderBottom: '1px solid #f5f5f5' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, background: task.priority === 'high' ? '#ef5350' : task.priority === 'medium' ? '#ffca28' : '#29b6f6' }} />
+              <div style={{ flex: 1, fontSize: '13px', color: '#424242' }}>{task.title}</div>
+              {task.due && task.due < now && (
+                <span style={{ fontSize: '10px', background: '#ffebee', color: '#c62828', padding: '2px 6px', borderRadius: '99px', fontWeight: '700' }}>Overdue</span>
+              )}
+            </div>
+          ))}
+        </div>
+
         <div style={{ background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', borderRadius: '16px', padding: '20px', color: 'white' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
             <span style={{ fontSize: '24px' }}>🤖</span>
             <div style={{ fontSize: '15px', fontWeight: '600' }}>Shamba Bot</div>
           </div>
           <p style={{ fontSize: '13px', opacity: 0.85, lineHeight: 1.6 }}>
-            Your maize is ready to harvest and tomato prices are 18% above average this week. Good time to plan your market run!
+            {activeCrops === 0 && pendingTasks === 0
+              ? 'Welcome! Start by adding your crops and tasks.'
+              : `You have ${activeCrops} active crop${activeCrops !== 1 ? 's' : ''} and ${pendingTasks} pending task${pendingTasks !== 1 ? 's' : ''}. Ask me anything!`}
           </p>
-          <button style={{ marginTop: '12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+          <button 
+          onClick={() => onNavigate('shamba')}
+          style={{ marginTop: '12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
             Ask Shamba Bot →
           </button>
         </div>
+
+        {(sales.length > 0 || expenses.length > 0) && (
+          <div style={{ background: 'white', borderRadius: '16px', padding: '20px', border: '1px solid #eeeeee' }}>
+            <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '14px' }}>Financial Summary</div>
+            {[
+              { label: 'Total Revenue', value: fmt(totalRevenue), color: '#2e7d32' },
+              { label: 'Total Expenses', value: fmt(totalExpenses), color: '#ef5350' },
+              { label: 'Net Profit', value: fmt(netProfit), color: netProfit >= 0 ? '#2e7d32' : '#ef5350' },
+            ].map(item => (
+              <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid #f5f5f5' }}>
+                <div style={{ fontSize: '13px', color: '#616161' }}>{item.label}</div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: item.color }}>{item.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-function Crops() {
-  const [crops, setCrops] = useState([
-    { id: 1, name: 'Maize', variety: 'H614D', acres: 2, stage: 'ready', planted: '2026-01-15' },
-    { id: 2, name: 'Kales', variety: '', acres: 0.5, stage: 'fruiting', planted: '2026-03-01' },
-    { id: 3, name: 'Tomatoes', variety: 'Kilele F1', acres: 1, stage: 'flowering', planted: '2026-02-10' },
-  ])
+// ─────────────────────────────────────────────────────────
+//  CROPS
+// ─────────────────────────────────────────────────────────
+function Crops({ crops, setCrops }) {
   const [showForm, setShowForm] = useState(false)
-  const [newCrop, setNewCrop] = useState({ name: '', variety: '', acres: '', stage: 'seedling', planted: '' })
+  const [form, setForm] = useState({ name: '', variety: '', acres: '', planted: '', harvest: '', stage: 'seedling', notes: '' })
+  const stages = ['seedling', 'growing', 'flowering', 'ready', 'harvested']
+  const stageColor = {
+    seedling:  { bg: '#e3f2fd', color: '#0277bd' },
+    growing:   { bg: '#e8f5e9', color: '#2e7d32' },
+    flowering: { bg: '#f3e5f5', color: '#7b1fa2' },
+    ready:     { bg: '#fff8e1', color: '#f57f17' },
+    harvested: { bg: '#eeeeee', color: '#616161' },
+  }
 
-  const stagePct = { seedling: 10, vegetative: 35, flowering: 55, fruiting: 75, ready: 95, harvested: 100 }
-  const stageColor = { seedling: '#29b6f6', vegetative: '#4caf50', flowering: '#ffca28', fruiting: '#ffca28', ready: '#4caf50', harvested: '#9e9e9e' }
-
-  function addCrop() {
-    if (!newCrop.name) { alert('Crop name is required'); return }
-    setCrops([...crops, { ...newCrop, id: Date.now(), acres: parseFloat(newCrop.acres) || 0 }])
-    setNewCrop({ name: '', variety: '', acres: '', stage: 'seedling', planted: '' })
+  function handleAdd() {
+    if (!form.name.trim()) return alert('Crop name is required')
+    setCrops(prev => [...prev, { ...form, id: nid(), acres: parseFloat(form.acres) || 0 }])
+    setForm({ name: '', variety: '', acres: '', planted: '', harvest: '', stage: 'seedling', notes: '' })
     setShowForm(false)
   }
 
-  function deleteCrop(id) { setCrops(crops.filter(c => c.id !== id)) }
-  function updateStage(id, stage) { setCrops(crops.map(c => c.id === id ? { ...c, stage } : c)) }
-
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div>
-          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px' }}>My Crops</h2>
-          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '2px' }}>
-            {crops.filter(c => c.stage !== 'harvested').length} active · {crops.filter(c => c.stage === 'ready').length} ready to harvest
-          </p>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>My Crops</h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>{crops.length === 0 ? 'No crops yet' : `${crops.length} crop${crops.length !== 1 ? 's' : ''} tracked`}</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
-          + Add Crop
-        </button>
+        <button onClick={() => setShowForm(true)} style={{ padding: '10px 18px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🌱 Add Crop</button>
       </div>
 
+      {crops.length === 0 && !showForm && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '64px', textAlign: 'center', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🌿</div>
+          <div style={{ fontSize: '16px', fontWeight: '600', color: '#424242', marginBottom: '6px' }}>No crops added yet</div>
+          <div style={{ fontSize: '13px', color: '#9e9e9e', marginBottom: '20px' }}>Start tracking your crops to see insights on your dashboard</div>
+          <button onClick={() => setShowForm(true)} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🌱 Add First Crop</button>
+        </div>
+      )}
+
       {showForm && (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '20px', border: '1px solid #eeeeee' }}>
-          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>New Crop</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #eeeeee', marginBottom: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>🌱 New Crop</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             {[
-              { label: 'Crop Name *', key: 'name', placeholder: 'e.g. Maize', type: 'text' },
-              { label: 'Variety', key: 'variety', placeholder: 'e.g. H614D', type: 'text' },
-              { label: 'Acres', key: 'acres', placeholder: '1.5', type: 'number' },
-              { label: 'Planted On', key: 'planted', placeholder: '', type: 'date' },
-            ].map(field => (
-              <div key={field.key}>
-                <label style={{ fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '5px' }}>{field.label}</label>
-                <input
-                  type={field.type}
-                  value={newCrop[field.key]}
-                  onChange={e => setNewCrop({ ...newCrop, [field.key]: e.target.value })}
-                  placeholder={field.placeholder}
-                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none' }}
-                />
+              { label: 'Crop Name *', key: 'name', placeholder: 'e.g. Maize, Tomatoes' },
+              { label: 'Variety', key: 'variety', placeholder: 'e.g. H614D, Kilele F1' },
+              { label: 'Acres Planted', key: 'acres', placeholder: 'e.g. 2.5', type: 'number' },
+            ].map(f => (
+              <div key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>{f.label}</label>
+                <input type={f.type || 'text'} value={form[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.placeholder} style={inputStyle} />
               </div>
             ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Stage</label>
+              <select value={form.stage} onChange={e => setForm(p => ({ ...p, stage: e.target.value }))} style={inputStyle}>
+                {stages.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Date Planted</label>
+              <input type="date" value={form.planted} onChange={e => setForm(p => ({ ...p, planted: e.target.value }))} style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Expected Harvest</label>
+              <input type="date" value={form.harvest} onChange={e => setForm(p => ({ ...p, harvest: e.target.value }))} style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', gridColumn: '1 / -1' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Notes</label>
+              <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Any additional notes..." rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+            </div>
           </div>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '5px' }}>Growth Stage</label>
-            <select value={newCrop.stage} onChange={e => setNewCrop({ ...newCrop, stage: e.target.value })} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none' }}>
-              {['seedling', 'vegetative', 'flowering', 'fruiting', 'ready', 'harvested'].map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={addCrop} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Crop</button>
-            <button onClick={() => setShowForm(false)} style={{ background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+            <button onClick={handleAdd} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Crop</button>
+            <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
           </div>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
-        {crops.map(crop => (
-          <div key={crop.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #eeeeee', borderTop: `3px solid ${stageColor[crop.stage]}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-              <div style={{ fontSize: '15px', fontWeight: '600' }}>{crop.name}</div>
-              <span style={{ background: stageColor[crop.stage] + '22', color: stageColor[crop.stage], fontSize: '11px', fontWeight: '600', padding: '2px 10px', borderRadius: '99px' }}>{crop.stage}</span>
-            </div>
-            {crop.variety && <div style={{ fontSize: '12px', color: '#9e9e9e' }}>Variety: {crop.variety}</div>}
-            <div style={{ fontSize: '12px', color: '#9e9e9e', marginTop: '2px' }}>{crop.acres} acres · Planted {crop.planted}</div>
-            <div style={{ marginTop: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#9e9e9e', marginBottom: '4px' }}>
-                <span>Growth</span><span>{stagePct[crop.stage]}%</span>
+      {crops.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '14px' }}>
+          {crops.map(crop => (
+            <div key={crop.id} style={{ background: 'white', borderRadius: '14px', padding: '18px', border: '1px solid #eeeeee', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121' }}>{crop.name}</div>
+                  {crop.variety && <div style={{ fontSize: '12px', color: '#9e9e9e', marginTop: '2px' }}>{crop.variety}</div>}
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '99px', background: stageColor[crop.stage]?.bg, color: stageColor[crop.stage]?.color }}>
+                  {crop.stage.charAt(0).toUpperCase() + crop.stage.slice(1)}
+                </span>
               </div>
-              <div style={{ height: '5px', background: '#eeeeee', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${stagePct[crop.stage]}%`, background: stageColor[crop.stage], borderRadius: '3px', transition: 'width 0.4s ease' }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
+                {crop.acres > 0 && <div style={{ fontSize: '12px', color: '#616161' }}>📐 <strong>{crop.acres}</strong> acres</div>}
+                {crop.planted && <div style={{ fontSize: '12px', color: '#616161' }}>📅 Planted: <strong>{crop.planted}</strong></div>}
+                {crop.harvest && <div style={{ fontSize: '12px', color: '#616161' }}>🌾 Harvest: <strong>{crop.harvest}</strong></div>}
               </div>
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ fontSize: '11px', color: '#9e9e9e', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Update Stage</div>
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                  {stages.map(s => (
+                    <button key={s} onClick={() => setCrops(prev => prev.map(c => c.id === crop.id ? { ...c, stage: s } : c))} style={{ padding: '4px 8px', borderRadius: '99px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif', border: crop.stage === s ? '2px solid #2e7d32' : '1px solid #e0e0e0', background: crop.stage === s ? '#e8f5e9' : 'white', color: crop.stage === s ? '#2e7d32' : '#9e9e9e' }}>
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {crop.notes && <div style={{ fontSize: '12px', color: '#757575', fontStyle: 'italic', marginBottom: '12px' }}>"{crop.notes}"</div>}
+              <button onClick={() => { if (window.confirm('Remove this crop?')) setCrops(prev => prev.filter(c => c.id !== crop.id)) }} style={{ fontSize: '12px', color: '#ef5350', background: '#ffebee', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '5px 10px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🗑 Remove</button>
             </div>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              <select value={crop.stage} onChange={e => updateStage(crop.id, e.target.value)} style={{ flex: 1, padding: '6px 8px', border: '1px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '12px', outline: 'none' }}>
-                {['seedling', 'vegetative', 'flowering', 'fruiting', 'ready', 'harvested'].map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <button onClick={() => deleteCrop(crop.id)} style={{ padding: '6px 10px', background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🗑️</button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+//  LIVESTOCK
+// ─────────────────────────────────────────────────────────
+function Livestock({ livestock, setLivestock }) {
+  const [showForm, setShowForm]         = useState(false)
+  const [showRecordForm, setShowRecordForm] = useState(null)
+  const [form, setForm]   = useState({ emoji: '🐄', name: '', type: 'Dairy', count: '', notes: '' })
+  const [record, setRecord] = useState({ type: 'milk', qty: '', date: today() })
+  const types  = ['Dairy', 'Beef', 'Layers', 'Broilers', 'Goats', 'Sheep', 'Pigs', 'Other']
+  const emojis = ['🐄', '🐂', '🐔', '🐓', '🐐', '🐑', '🐖', '🦆']
+
+  function handleAdd() {
+    if (!form.name.trim()) return alert('Group name is required')
+    setLivestock(prev => [...prev, { ...form, id: nid(), count: parseInt(form.count) || 0, records: [] }])
+    setForm({ emoji: '🐄', name: '', type: 'Dairy', count: '', notes: '' })
+    setShowForm(false)
+  }
+
+  function handleRecord() {
+    if (!record.qty) return alert('Enter a quantity')
+    setLivestock(prev => prev.map(l => l.id !== showRecordForm ? l : { ...l, records: [{ id: nid(), ...record, qty: parseFloat(record.qty) }, ...(l.records || [])] }))
+    setRecord({ type: 'milk', qty: '', date: today() })
+    setShowRecordForm(null)
+  }
+
+  function totalProd(animal, type) {
+    return (animal.records || []).filter(r => r.type === type).reduce((sum, r) => sum + r.qty, 0)
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>Livestock</h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>{livestock.length === 0 ? 'No livestock yet' : `${livestock.length} group${livestock.length !== 1 ? 's' : ''} tracked`}</p>
+        </div>
+        <button onClick={() => setShowForm(true)} style={{ padding: '10px 18px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🐄 Add Group</button>
+      </div>
+
+      {livestock.length === 0 && !showForm && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '64px', textAlign: 'center', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🐄</div>
+          <div style={{ fontSize: '16px', fontWeight: '600', color: '#424242', marginBottom: '6px' }}>No livestock added yet</div>
+          <button onClick={() => setShowForm(true)} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🐄 Add First Group</button>
+        </div>
+      )}
+
+      {showForm && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #eeeeee', marginBottom: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>🐄 New Livestock Group</div>
+          <div style={{ marginBottom: '14px' }}>
+            <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161', display: 'block', marginBottom: '8px' }}>Animal Type</label>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {emojis.map(e => (
+                <button key={e} onClick={() => setForm(f => ({ ...f, emoji: e }))} style={{ fontSize: '24px', padding: '8px', borderRadius: '8px', cursor: 'pointer', border: form.emoji === e ? '2px solid #2e7d32' : '1px solid #e0e0e0', background: form.emoji === e ? '#e8f5e9' : 'white' }}>{e}</button>
+              ))}
             </div>
           </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Group Name *</label>
+              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Main Herd" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Category</label>
+              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} style={inputStyle}>
+                {types.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Number of Animals</label>
+              <input type="number" value={form.count} onChange={e => setForm(f => ({ ...f, count: e.target.value }))} placeholder="e.g. 12" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Notes</label>
+              <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="e.g. Vaccinated" style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+            <button onClick={handleAdd} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Group</button>
+            <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {showRecordForm && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #eeeeee', marginBottom: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>📋 Record Production</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Type</label>
+              <select value={record.type} onChange={e => setRecord(r => ({ ...r, type: e.target.value }))} style={inputStyle}>
+                <option value="milk">Milk (litres)</option>
+                <option value="eggs">Eggs (pieces)</option>
+                <option value="weight">Weight (kg)</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Quantity</label>
+              <input type="number" value={record.qty} onChange={e => setRecord(r => ({ ...r, qty: e.target.value }))} placeholder="e.g. 25" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Date</label>
+              <input type="date" value={record.date} onChange={e => setRecord(r => ({ ...r, date: e.target.value }))} style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+            <button onClick={handleRecord} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Record</button>
+            <button onClick={() => setShowRecordForm(null)} style={{ padding: '10px 20px', background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {livestock.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '14px' }}>
+          {livestock.map(animal => (
+            <div key={animal.id} style={{ background: 'white', borderRadius: '14px', padding: '18px', border: '1px solid #eeeeee', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '32px' }}>{animal.emoji}</span>
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121' }}>{animal.name}</div>
+                    <div style={{ fontSize: '12px', color: '#9e9e9e' }}>{animal.type} · {animal.count} animals</div>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
+                {totalProd(animal, 'milk') > 0 && (
+                  <div style={{ background: '#e3f2fd', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '18px', fontWeight: '700', color: '#0277bd' }}>{totalProd(animal, 'milk')}L</div>
+                    <div style={{ fontSize: '11px', color: '#0277bd' }}>Total Milk</div>
+                  </div>
+                )}
+                {totalProd(animal, 'eggs') > 0 && (
+                  <div style={{ background: '#fff8e1', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '18px', fontWeight: '700', color: '#f57f17' }}>{totalProd(animal, 'eggs')}</div>
+                    <div style={{ fontSize: '11px', color: '#f57f17' }}>Total Eggs</div>
+                  </div>
+                )}
+              </div>
+              {(animal.records || []).length > 0 && (
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ fontSize: '11px', color: '#9e9e9e', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>Recent Records</div>
+                  {animal.records.slice(0, 3).map(r => (
+                    <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f5f5f5', fontSize: '12px' }}>
+                      <span style={{ color: '#616161' }}>{r.type.charAt(0).toUpperCase() + r.type.slice(1)}</span>
+                      <span style={{ fontWeight: '600', color: '#212121' }}>{r.qty} · {r.date}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {animal.notes && <div style={{ fontSize: '12px', color: '#757575', fontStyle: 'italic', marginBottom: '12px' }}>"{animal.notes}"</div>}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => setShowRecordForm(animal.id)} style={{ flex: 1, padding: '8px', background: '#e8f5e9', color: '#2e7d32', border: '1px solid #c8e6c9', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>📋 Record Production</button>
+                <button onClick={() => { if (window.confirm('Remove this group?')) setLivestock(prev => prev.filter(l => l.id !== animal.id)) }} style={{ padding: '8px 12px', background: '#ffebee', color: '#ef5350', border: '1px solid #ffcdd2', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🗑</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+//  SALES & EXPENSES
+// ─────────────────────────────────────────────────────────
+function Sales({ sales, setSales, expenses, setExpenses }) {
+  const [tab, setTab] = useState('overview')
+  const [showSaleForm, setShowSaleForm]       = useState(false)
+  const [showExpenseForm, setShowExpenseForm] = useState(false)
+  const [saleForm, setSaleForm]     = useState({ item: '', qty: '', price: '', total: '', buyer: '', date: today() })
+  const [expenseForm, setExpenseForm] = useState({ desc: '', cat: 'seeds', amount: '', date: today() })
+  const expenseCats = ['seeds', 'fertiliser', 'labour', 'equipment', 'veterinary', 'fuel', 'transport', 'other']
+  const totalRevenue  = sales.reduce((sum, s) => sum + s.total, 0)
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+  const netProfit     = totalRevenue - totalExpenses
+
+  function handleAddSale() {
+    if (!saleForm.item.trim()) return alert('Item name is required')
+    if (!saleForm.total) return alert('Total amount is required')
+    setSales(prev => [{ id: nid(), item: saleForm.item, qty: parseFloat(saleForm.qty) || 0, price: parseFloat(saleForm.price) || 0, total: parseFloat(saleForm.total), buyer: saleForm.buyer, date: saleForm.date }, ...prev])
+    setSaleForm({ item: '', qty: '', price: '', total: '', buyer: '', date: today() })
+    setShowSaleForm(false)
+  }
+
+  function handleAddExpense() {
+    if (!expenseForm.amount) return alert('Amount is required')
+    setExpenses(prev => [{ id: nid(), desc: expenseForm.desc || 'Expense', cat: expenseForm.cat, amount: parseFloat(expenseForm.amount), date: expenseForm.date }, ...prev])
+    setExpenseForm({ desc: '', cat: 'seeds', amount: '', date: today() })
+    setShowExpenseForm(false)
+  }
+
+  function tabStyle(id) {
+    const active = tab === id
+    return { padding: '8px 18px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', border: 'none', fontFamily: 'Outfit, sans-serif', background: active ? '#2e7d32' : 'transparent', color: active ? 'white' : '#9e9e9e' }
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>Sales & Expenses</h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>Track your farm income and costs</p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={() => { setShowSaleForm(true); setShowExpenseForm(false) }} style={{ padding: '10px 16px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>💰 Add Sale</button>
+          <button onClick={() => { setShowExpenseForm(true); setShowSaleForm(false) }} style={{ padding: '10px 16px', background: '#ef5350', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>📋 Add Expense</button>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+        <MetricCard icon="💰" label="Total Revenue" value={fmt(totalRevenue)} sub={`${sales.length} sale${sales.length !== 1 ? 's' : ''}`} color="#2e7d32" />
+        <MetricCard icon="📋" label="Total Expenses" value={fmt(totalExpenses)} sub={`${expenses.length} expense${expenses.length !== 1 ? 's' : ''}`} color="#ef5350" />
+        <MetricCard icon="📈" label="Net Profit" value={fmt(netProfit)} sub={netProfit >= 0 ? '🟢 In profit' : '🔴 At a loss'} color={netProfit >= 0 ? '#2e7d32' : '#ef5350'} />
+      </div>
+
+      {showSaleForm && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #eeeeee', marginBottom: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>💰 Record Sale</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', gridColumn: '1 / -1' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Item Sold *</label>
+              <input value={saleForm.item} onChange={e => setSaleForm(f => ({ ...f, item: e.target.value }))} placeholder="e.g. Maize, Milk" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Quantity</label>
+              <input type="number" value={saleForm.qty} onChange={e => setSaleForm(f => ({ ...f, qty: e.target.value }))} onBlur={() => { const q = parseFloat(saleForm.qty); const p = parseFloat(saleForm.price); if (q && p) setSaleForm(f => ({ ...f, total: String(q * p) })) }} placeholder="e.g. 50" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Price per Unit (KSh)</label>
+              <input type="number" value={saleForm.price} onChange={e => setSaleForm(f => ({ ...f, price: e.target.value }))} onBlur={() => { const q = parseFloat(saleForm.qty); const p = parseFloat(saleForm.price); if (q && p) setSaleForm(f => ({ ...f, total: String(q * p) })) }} placeholder="e.g. 40" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Total Amount (KSh) *</label>
+              <input type="number" value={saleForm.total} onChange={e => setSaleForm(f => ({ ...f, total: e.target.value }))} placeholder="Auto-calculated or enter manually" style={{ ...inputStyle, background: saleForm.total ? '#e8f5e9' : 'white' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Buyer</label>
+              <input value={saleForm.buyer} onChange={e => setSaleForm(f => ({ ...f, buyer: e.target.value }))} placeholder="e.g. Wakulima Market" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Date</label>
+              <input type="date" value={saleForm.date} onChange={e => setSaleForm(f => ({ ...f, date: e.target.value }))} style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+            <button onClick={handleAddSale} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Sale</button>
+            <button onClick={() => setShowSaleForm(false)} style={{ padding: '10px 20px', background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {showExpenseForm && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #eeeeee', marginBottom: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>📋 Record Expense</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', gridColumn: '1 / -1' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Description</label>
+              <input value={expenseForm.desc} onChange={e => setExpenseForm(f => ({ ...f, desc: e.target.value }))} placeholder="e.g. Bought DAP fertiliser" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Category</label>
+              <select value={expenseForm.cat} onChange={e => setExpenseForm(f => ({ ...f, cat: e.target.value }))} style={inputStyle}>
+                {expenseCats.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Amount (KSh) *</label>
+              <input type="number" value={expenseForm.amount} onChange={e => setExpenseForm(f => ({ ...f, amount: e.target.value }))} placeholder="e.g. 3500" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Date</label>
+              <input type="date" value={expenseForm.date} onChange={e => setExpenseForm(f => ({ ...f, date: e.target.value }))} style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+            <button onClick={handleAddExpense} style={{ padding: '10px 20px', background: '#ef5350', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Expense</button>
+            <button onClick={() => setShowExpenseForm(false)} style={{ padding: '10px 20px', background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '4px', background: '#f5f5f5', borderRadius: '10px', padding: '4px', marginBottom: '16px', width: 'fit-content' }}>
+        {['overview', 'sales', 'expenses'].map(t => (
+          <button key={t} onClick={() => setTab(t)} style={tabStyle(t)}>{t.charAt(0).toUpperCase() + t.slice(1)}</button>
         ))}
+      </div>
+
+      {tab === 'overview' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+          <div style={{ background: 'white', borderRadius: '14px', padding: '20px', border: '1px solid #eeeeee' }}>
+            <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '14px' }}>Recent Sales</div>
+            {sales.length === 0 ? <div style={{ textAlign: 'center', padding: '24px', color: '#9e9e9e', fontSize: '13px' }}>No sales recorded yet</div>
+              : sales.slice(0, 5).map(s => (
+                <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #f5f5f5' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#212121' }}>{s.item}</div>
+                    <div style={{ fontSize: '11px', color: '#9e9e9e' }}>{s.date}{s.buyer ? ` · ${s.buyer}` : ''}</div>
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#2e7d32' }}>{fmt(s.total)}</div>
+                </div>
+              ))}
+          </div>
+          <div style={{ background: 'white', borderRadius: '14px', padding: '20px', border: '1px solid #eeeeee' }}>
+            <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '14px' }}>Recent Expenses</div>
+            {expenses.length === 0 ? <div style={{ textAlign: 'center', padding: '24px', color: '#9e9e9e', fontSize: '13px' }}>No expenses recorded yet</div>
+              : expenses.slice(0, 5).map(e => (
+                <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #f5f5f5' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#212121' }}>{e.desc}</div>
+                    <div style={{ fontSize: '11px', color: '#9e9e9e' }}>{e.date} · {e.cat}</div>
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#ef5350' }}>{fmt(e.amount)}</div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {tab === 'sales' && (
+        <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #eeeeee', overflow: 'hidden' }}>
+          {sales.length === 0 ? <div style={{ textAlign: 'center', padding: '48px', color: '#9e9e9e', fontSize: '13px' }}>No sales recorded yet</div> : (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#fafafa' }}>
+                  {['Item', 'Qty', 'Price', 'Total', 'Buyer', 'Date', ''].map(h => (
+                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', borderBottom: '1px solid #eeeeee' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sales.map(s => (
+                  <tr key={s.id}>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '600', color: '#212121', borderBottom: '1px solid #f5f5f5' }}>{s.item}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>{s.qty || '—'}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>{s.price ? fmt(s.price) : '—'}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '700', color: '#2e7d32', borderBottom: '1px solid #f5f5f5' }}>{fmt(s.total)}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>{s.buyer || '—'}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>{s.date}</td>
+                    <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
+                      <button onClick={() => { if (window.confirm('Remove?')) setSales(prev => prev.filter(x => x.id !== s.id)) }} style={{ background: '#ffebee', color: '#ef5350', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer' }}>🗑</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {tab === 'expenses' && (
+        <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #eeeeee', overflow: 'hidden' }}>
+          {expenses.length === 0 ? <div style={{ textAlign: 'center', padding: '48px', color: '#9e9e9e', fontSize: '13px' }}>No expenses recorded yet</div> : (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#fafafa' }}>
+                  {['Description', 'Category', 'Amount', 'Date', ''].map(h => (
+                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', borderBottom: '1px solid #eeeeee' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {expenses.map(e => (
+                  <tr key={e.id}>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '600', color: '#212121', borderBottom: '1px solid #f5f5f5' }}>{e.desc}</td>
+                    <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
+                      <span style={{ background: '#f3e5f5', color: '#7b1fa2', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '99px' }}>{e.cat}</span>
+                    </td>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '700', color: '#ef5350', borderBottom: '1px solid #f5f5f5' }}>{fmt(e.amount)}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>{e.date}</td>
+                    <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
+                      <button onClick={() => { if (window.confirm('Remove?')) setExpenses(prev => prev.filter(x => x.id !== e.id)) }} style={{ background: '#ffebee', color: '#ef5350', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer' }}>🗑</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+//  TASKS
+// ─────────────────────────────────────────────────────────
+function Tasks({ tasks, setTasks }) {
+  const [showForm, setShowForm] = useState(false)
+  const [filter, setFilter]     = useState('all')
+  const [form, setForm] = useState({ title: '', desc: '', priority: 'medium', category: 'general', due: '' })
+  const categories = ['general', 'crops', 'livestock', 'financial', 'maintenance', 'other']
+  const priorities = ['low', 'medium', 'high']
+  const priorityColor = { low: { bg: '#e3f2fd', color: '#0277bd' }, medium: { bg: '#fff8e1', color: '#f57f17' }, high: { bg: '#ffebee', color: '#c62828' } }
+  const categoryIcon  = { general: '📌', crops: '🌿', livestock: '🐄', financial: '💰', maintenance: '🔧', other: '📋' }
+  const now = today()
+
+  function handleAdd() {
+    if (!form.title.trim()) return alert('Task title is required')
+    setTasks(prev => [{ id: nid(), ...form, done: false, created: now }, ...prev])
+    setForm({ title: '', desc: '', priority: 'medium', category: 'general', due: '' })
+    setShowForm(false)
+  }
+
+  const counts = {
+    all: tasks.length,
+    pending: tasks.filter(t => !t.done).length,
+    overdue: tasks.filter(t => !t.done && t.due && t.due < now).length,
+    today:   tasks.filter(t => t.due === now).length,
+    done:    tasks.filter(t => t.done).length,
+  }
+
+  const filtered = tasks.filter(t => {
+    if (filter === 'all')     return true
+    if (filter === 'pending') return !t.done
+    if (filter === 'done')    return t.done
+    if (filter === 'overdue') return !t.done && t.due && t.due < now
+    if (filter === 'today')   return t.due === now
+    return true
+  })
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>Tasks</h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>{counts.pending === 0 ? 'All caught up! 🎉' : `${counts.pending} pending task${counts.pending !== 1 ? 's' : ''}`}</p>
+        </div>
+        <button onClick={() => setShowForm(true)} style={{ padding: '10px 18px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>✅ Add Task</button>
+      </div>
+
+      {counts.overdue > 0 && (
+        <div style={{ background: '#fff8e1', border: '1px solid #ffca28', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '20px' }}>⚠️</span>
+          <div style={{ fontSize: '13px', fontWeight: '700', color: '#f57f17' }}>{counts.overdue} overdue task{counts.overdue !== 1 ? 's' : ''}</div>
+        </div>
+      )}
+
+      {showForm && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #eeeeee', marginBottom: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>✅ New Task</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', gridColumn: '1 / -1' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Task Title *</label>
+              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Apply fertiliser to maize field" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', gridColumn: '1 / -1' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Description</label>
+              <textarea value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="Any extra details..." rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Priority</label>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {priorities.map(p => (
+                  <button key={p} onClick={() => setForm(f => ({ ...f, priority: p }))} style={{ flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif', border: form.priority === p ? `2px solid ${priorityColor[p].color}` : '1px solid #e0e0e0', background: form.priority === p ? priorityColor[p].bg : 'white', color: form.priority === p ? priorityColor[p].color : '#9e9e9e' }}>
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Category</label>
+              <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} style={inputStyle}>
+                {categories.map(c => <option key={c} value={c}>{categoryIcon[c]} {c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Due Date</label>
+              <input type="date" value={form.due} onChange={e => setForm(f => ({ ...f, due: e.target.value }))} style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+            <button onClick={handleAdd} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Task</button>
+            <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '4px', background: '#f5f5f5', borderRadius: '10px', padding: '4px', marginBottom: '16px', width: 'fit-content', flexWrap: 'wrap' }}>
+        {['all', 'pending', 'today', 'overdue', 'done'].map(f => (
+          <button key={f} onClick={() => setFilter(f)} style={{ padding: '7px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: 'none', fontFamily: 'Outfit, sans-serif', background: filter === f ? '#2e7d32' : 'transparent', color: filter === f ? 'white' : '#9e9e9e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {counts[f] > 0 && <span style={{ background: filter === f ? 'rgba(255,255,255,0.25)' : '#eeeeee', color: filter === f ? 'white' : '#616161', borderRadius: '99px', padding: '1px 7px', fontSize: '11px' }}>{counts[f]}</span>}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '64px', textAlign: 'center', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '48px', marginBottom: '12px' }}>{filter === 'done' ? '🎉' : '✅'}</div>
+          <div style={{ fontSize: '16px', fontWeight: '600', color: '#424242' }}>{filter === 'all' ? 'Add your first task' : `No ${filter} tasks`}</div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {filtered.map(task => {
+          const isOverdue = !task.done && task.due && task.due < now
+          const isToday   = task.due === now
+          return (
+            <div key={task.id} style={{ background: 'white', borderRadius: '12px', padding: '16px 18px', border: '1px solid #eeeeee', display: 'flex', alignItems: 'flex-start', gap: '14px', opacity: task.done ? 0.6 : 1, borderLeft: isOverdue ? '4px solid #ef5350' : isToday ? '4px solid #ffca28' : '4px solid transparent', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <button onClick={() => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: !t.done } : t))} style={{ width: '22px', height: '22px', borderRadius: '50%', border: task.done ? 'none' : '2px solid #e0e0e0', background: task.done ? '#2e7d32' : 'white', cursor: 'pointer', flexShrink: 0, marginTop: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: 'white', fontWeight: '700' }}>
+                {task.done ? '✓' : ''}
+              </button>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#212121', textDecoration: task.done ? 'line-through' : 'none' }}>{categoryIcon[task.category]} {task.title}</div>
+                  <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '99px', background: priorityColor[task.priority]?.bg, color: priorityColor[task.priority]?.color }}>{task.priority.toUpperCase()}</span>
+                  {isOverdue && <span style={{ fontSize: '10px', background: '#ffebee', color: '#c62828', padding: '2px 8px', borderRadius: '99px', fontWeight: '700' }}>OVERDUE</span>}
+                  {isToday && !task.done && <span style={{ fontSize: '10px', background: '#fff8e1', color: '#f57f17', padding: '2px 8px', borderRadius: '99px', fontWeight: '700' }}>TODAY</span>}
+                </div>
+                {task.desc && <div style={{ fontSize: '12px', color: '#9e9e9e', marginTop: '4px' }}>{task.desc}</div>}
+                {task.due && <div style={{ fontSize: '11px', color: isOverdue ? '#ef5350' : '#9e9e9e', marginTop: '4px' }}>📅 Due: {task.due}</div>}
+              </div>
+              <button onClick={() => { if (window.confirm('Delete task?')) setTasks(prev => prev.filter(t => t.id !== task.id)) }} style={{ background: '#ffebee', color: '#ef5350', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '5px 8px', fontSize: '12px', cursor: 'pointer', flexShrink: 0 }}>🗑</button>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
 }
 
-function ShambaBot() {
+// ─────────────────────────────────────────────────────────
+//  WEATHER
+// ─────────────────────────────────────────────────────────
+function Weather() {
+  const [weather, setWeather]   = useState(null)
+  const [location, setLocation] = useState(null)
+  const [error, setError]       = useState(null)
+  const [loading, setLoading]   = useState(false)
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  const weatherCode = {
+    0: { label: 'Clear Sky', icon: '☀️' }, 1: { label: 'Mainly Clear', icon: '🌤️' },
+    2: { label: 'Partly Cloudy', icon: '⛅' }, 3: { label: 'Overcast', icon: '☁️' },
+    45: { label: 'Foggy', icon: '🌫️' }, 48: { label: 'Foggy', icon: '🌫️' },
+    51: { label: 'Light Drizzle', icon: '🌦️' }, 61: { label: 'Light Rain', icon: '🌧️' },
+    63: { label: 'Rain', icon: '🌧️' }, 65: { label: 'Heavy Rain', icon: '🌧️' },
+    80: { label: 'Rain Showers', icon: '🌦️' }, 95: { label: 'Thunderstorm', icon: '⛈️' },
+  }
+
+  function getInfo(code) { return weatherCode[code] || { label: 'Unknown', icon: '🌡️' } }
+
+  function farmingAdvice(code, rain, temp) {
+    if ([95, 99].includes(code)) return { msg: 'Thunderstorm expected — keep livestock sheltered and avoid fieldwork.', color: '#c62828', bg: '#ffebee' }
+    if ([61, 63, 65, 80, 81].includes(code)) return { msg: 'Rain expected — hold off spraying. Check drainage in your fields.', color: '#0277bd', bg: '#e3f2fd' }
+    if (temp > 32) return { msg: 'Very hot — water crops early morning or evening. Keep animals hydrated.', color: '#e65100', bg: '#fff3e0' }
+    if (temp < 12) return { msg: 'Cool temperatures — watch for frost risk. Protect sensitive seedlings.', color: '#4527a0', bg: '#ede7f6' }
+    return { msg: 'Conditions look good for general farm activities today.', color: '#2e7d32', bg: '#e8f5e9' }
+  }
+
+  async function fetchWeather(lat, lon, name) {
+    setLoading(true); setError(null)
+    try {
+      const res  = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code&timezone=Africa%2FNairobi&forecast_days=7`)
+      const data = await res.json()
+      setWeather(data); setLocation(name)
+    } catch { setError('Failed to fetch weather. Check your internet connection.') }
+    finally { setLoading(false) }
+  }
+
+  function getLocation() {
+    if (!navigator.geolocation) { setError('Geolocation not supported.'); return }
+    setLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      async pos => {
+        const { latitude: lat, longitude: lon } = pos.coords
+        try {
+          const geo  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+          const data = await geo.json()
+          fetchWeather(lat, lon, data.address?.county || data.address?.city || 'Your Location')
+        } catch { fetchWeather(lat, lon, 'Your Location') }
+      },
+      () => fetchWeather(-1.2921, 36.8219, 'Nairobi')
+    )
+  }
+
+  useEffect(() => { getLocation() }, [])
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>Weather</h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>{location ? `📍 ${location}` : 'Detecting your location...'}</p>
+        </div>
+        <button onClick={getLocation} style={{ padding: '10px 18px', background: '#0277bd', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🔄 Refresh</button>
+      </div>
+
+      {loading && <div style={{ background: 'white', borderRadius: '16px', padding: '64px', textAlign: 'center', border: '1px solid #eeeeee' }}><div style={{ fontSize: '40px', marginBottom: '12px' }}>🌍</div><div style={{ fontSize: '15px', color: '#9e9e9e' }}>Fetching weather for your farm...</div></div>}
+      {error && !loading && <div style={{ background: '#ffebee', borderRadius: '16px', padding: '32px', textAlign: 'center', border: '1px solid #ffcdd2' }}><div style={{ fontSize: '40px', marginBottom: '12px' }}>⚠️</div><div style={{ fontSize: '15px', color: '#c62828', marginBottom: '16px' }}>{error}</div><button onClick={getLocation} style={{ padding: '10px 20px', background: '#c62828', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Try Again</button></div>}
+
+      {weather && !loading && (
+        <div>
+          <div style={{ background: 'linear-gradient(135deg, #0277bd, #0288d1)', borderRadius: '20px', padding: '28px', color: 'white', marginBottom: '16px', boxShadow: '0 4px 20px rgba(2,119,189,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <div style={{ fontSize: '72px', fontWeight: '700', lineHeight: 1 }}>{Math.round(weather.current.temperature_2m)}°C</div>
+                <div style={{ fontSize: '20px', marginTop: '8px', opacity: 0.9 }}>{getInfo(weather.current.weather_code).icon} {getInfo(weather.current.weather_code).label}</div>
+                <div style={{ fontSize: '13px', opacity: 0.7, marginTop: '4px' }}>📍 {location}</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {[
+                  { icon: '💧', label: 'Humidity', value: `${weather.current.relative_humidity_2m}%` },
+                  { icon: '💨', label: 'Wind', value: `${Math.round(weather.current.wind_speed_10m)} km/h` },
+                  { icon: '🌧️', label: 'Precipitation', value: `${weather.current.precipitation} mm` },
+                  { icon: '🌡️', label: 'Feels Like', value: `${Math.round(weather.current.temperature_2m)}°C` },
+                ].map(s => (
+                  <div key={s.label} style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '10px', padding: '10px 14px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '18px' }}>{s.icon}</div>
+                    <div style={{ fontSize: '16px', fontWeight: '700', marginTop: '2px' }}>{s.value}</div>
+                    <div style={{ fontSize: '10px', opacity: 0.75, marginTop: '2px' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {(() => {
+            const a = farmingAdvice(weather.current.weather_code, weather.current.precipitation, weather.current.temperature_2m)
+            return (
+              <div style={{ background: a.bg, border: `1px solid ${a.color}33`, borderRadius: '12px', padding: '14px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '22px' }}>🌾</span>
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: a.color, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '3px' }}>Farming Advice</div>
+                  <div style={{ fontSize: '13px', color: a.color }}>{a.msg}</div>
+                </div>
+              </div>
+            )
+          })()}
+
+          <div style={{ background: 'white', borderRadius: '16px', padding: '20px', border: '1px solid #eeeeee' }}>
+            <div style={{ fontSize: '15px', fontWeight: '600', color: '#212121', marginBottom: '16px' }}>7-Day Forecast</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+              {weather.daily.time.map((date, i) => {
+                const d = new Date(date); const info = getInfo(weather.daily.weather_code[i]); const isToday = i === 0
+                return (
+                  <div key={date} style={{ textAlign: 'center', padding: '12px 6px', borderRadius: '12px', background: isToday ? '#e3f2fd' : '#fafafa', border: isToday ? '1px solid #90caf9' : '1px solid #f0f0f0' }}>
+                    <div style={{ fontSize: '11px', fontWeight: '700', color: isToday ? '#0277bd' : '#9e9e9e', marginBottom: '6px' }}>{isToday ? 'Today' : days[d.getDay()]}</div>
+                    <div style={{ fontSize: '22px', marginBottom: '6px' }}>{info.icon}</div>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#ef5350' }}>{Math.round(weather.daily.temperature_2m_max[i])}°</div>
+                    <div style={{ fontSize: '12px', color: '#9e9e9e' }}>{Math.round(weather.daily.temperature_2m_min[i])}°</div>
+                    {weather.daily.precipitation_sum[i] > 0 && <div style={{ fontSize: '10px', color: '#0277bd', marginTop: '4px', fontWeight: '600' }}>{weather.daily.precipitation_sum[i]}mm</div>}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+//  MARKET PRICES
+// ─────────────────────────────────────────────────────────
+function MarketPrices() {
+  const [search, setSearch]       = useState('')
+  const [category, setCategory]   = useState('all')
+  const [showForm, setShowForm]   = useState(false)
+  const [submitted, setSubmitted] = useState([])
+  const [form, setForm] = useState({ crop: '', price: '', unit: 'kg', market: '', county: '' })
+
+  const basePrices = [
+    { id: 1,  name: 'Maize (Dry)',       category: 'cereals',    price: 45,   unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 5  },
+    { id: 2,  name: 'Wheat',             category: 'cereals',    price: 55,   unit: 'kg',    market: 'Eldoret Market',   county: 'Uasin Gishu', trend: 'stable', change: 0  },
+    { id: 3,  name: 'Sorghum',           category: 'cereals',    price: 38,   unit: 'kg',    market: 'Kisumu Market',    county: 'Kisumu',      trend: 'down',   change: 3  },
+    { id: 4,  name: 'Tomatoes',          category: 'vegetables', price: 80,   unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'down',   change: 20 },
+    { id: 5,  name: 'Kale (Sukuma)',     category: 'vegetables', price: 15,   unit: 'bunch', market: 'Marikiti Market',  county: 'Nairobi',     trend: 'stable', change: 0  },
+    { id: 6,  name: 'Cabbage',           category: 'vegetables', price: 40,   unit: 'head',  market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 8  },
+    { id: 7,  name: 'Onions',            category: 'vegetables', price: 90,   unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 10 },
+    { id: 8,  name: 'Capsicum',          category: 'vegetables', price: 150,  unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 20 },
+    { id: 9,  name: 'Beans (Dry)',       category: 'legumes',    price: 130,  unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 10 },
+    { id: 10, name: 'Green Grams',       category: 'legumes',    price: 120,  unit: 'kg',    market: 'Kisumu Market',    county: 'Kisumu',      trend: 'stable', change: 0  },
+    { id: 11, name: 'Avocado',           category: 'fruits',     price: 15,   unit: 'piece', market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 3  },
+    { id: 12, name: 'Mango',             category: 'fruits',     price: 10,   unit: 'piece', market: 'Marikiti Market',  county: 'Nairobi',     trend: 'down',   change: 2  },
+    { id: 13, name: 'Milk (Fresh)',      category: 'livestock',  price: 55,   unit: 'litre', market: 'Nakuru Market',    county: 'Nakuru',      trend: 'stable', change: 0  },
+    { id: 14, name: 'Eggs (Tray)',       category: 'livestock',  price: 380,  unit: 'tray',  market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 20 },
+    { id: 15, name: 'Chicken (Live)',    category: 'livestock',  price: 700,  unit: 'piece', market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 50 },
+    { id: 16, name: 'Coffee (Dry)',      category: 'cash',       price: 350,  unit: 'kg',    market: 'Thika Market',     county: 'Kiambu',      trend: 'up',     change: 30 },
+    { id: 17, name: 'Tea Leaves',        category: 'cash',       price: 22,   unit: 'kg',    market: 'Nakuru Market',    county: 'Nakuru',      trend: 'stable', change: 0  },
+    { id: 18, name: 'Sugarcane',         category: 'cash',       price: 4,    unit: 'kg',    market: 'Kisumu Market',    county: 'Kisumu',      trend: 'down',   change: 1  },
+  ]
+
+  const allPrices = [...basePrices, ...submitted]
+  const categories = [
+    { id: 'all', label: 'All', icon: '🛒' }, { id: 'cereals', label: 'Cereals', icon: '🌽' },
+    { id: 'vegetables', label: 'Vegetables', icon: '🥬' }, { id: 'legumes', label: 'Legumes', icon: '🫘' },
+    { id: 'fruits', label: 'Fruits', icon: '🍎' }, { id: 'livestock', label: 'Livestock', icon: '🐄' },
+    { id: 'cash', label: 'Cash Crops', icon: '☕' },
+  ]
+
+  const filtered = allPrices.filter(p => {
+    const matchCat    = category === 'all' || p.category === category
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.market.toLowerCase().includes(search.toLowerCase())
+    return matchCat && matchSearch
+  })
+
+  function trendIcon(trend, change) {
+    if (trend === 'up')   return { icon: '↑', color: '#2e7d32', label: `+${change}` }
+    if (trend === 'down') return { icon: '↓', color: '#ef5350', label: `-${change}` }
+    return { icon: '→', color: '#9e9e9e', label: 'Stable' }
+  }
+
+  function handleSubmit() {
+    if (!form.crop.trim() || !form.price || !form.market.trim()) return alert('Crop, price and market are required')
+    setSubmitted(prev => [{ id: nid(), name: form.crop, category: 'other', price: parseFloat(form.price), unit: form.unit, market: form.market, county: form.county, trend: 'stable', change: 0, submitted: true }, ...prev])
+    setForm({ crop: '', price: '', unit: 'kg', market: '', county: '' })
+    setShowForm(false)
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>Market Prices</h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>Current produce prices across Kenyan markets</p>
+        </div>
+        <button onClick={() => setShowForm(true)} style={{ padding: '10px 18px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>📊 Submit Price</button>
+      </div>
+
+      <div style={{ background: '#e8f5e9', border: '1px solid #c8e6c9', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{ fontSize: '20px' }}>💡</span>
+        <div style={{ fontSize: '13px', color: '#2e7d32' }}>Prices are indicative. Submit a price to help fellow farmers get accurate local rates.</div>
+      </div>
+
+      {showForm && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #eeeeee', marginBottom: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>📊 Submit a Market Price</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Crop / Product *</label>
+              <input value={form.crop} onChange={e => setForm(f => ({ ...f, crop: e.target.value }))} placeholder="e.g. Tomatoes" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Price (KSh) *</label>
+              <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="e.g. 80" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Unit</label>
+              <select value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} style={inputStyle}>
+                {['kg', 'litre', 'bunch', 'piece', 'tray', 'head'].map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Market *</label>
+              <input value={form.market} onChange={e => setForm(f => ({ ...f, market: e.target.value }))} placeholder="e.g. Eldoret Market" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>County</label>
+              <input value={form.county} onChange={e => setForm(f => ({ ...f, county: e.target.value }))} placeholder="e.g. Uasin Gishu" style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+            <button onClick={handleSubmit} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Submit Price</button>
+            <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍  Search crop, market or county..." style={{ ...inputStyle, fontSize: '14px', padding: '12px 16px', marginBottom: '16px' }} />
+
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        {categories.map(cat => (
+          <button key={cat.id} onClick={() => setCategory(cat.id)} style={{ padding: '7px 14px', borderRadius: '99px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: 'none', fontFamily: 'Outfit, sans-serif', background: category === cat.id ? '#2e7d32' : '#f5f5f5', color: category === cat.id ? 'white' : '#616161' }}>
+            {cat.icon} {cat.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #eeeeee', overflow: 'hidden' }}>
+        {filtered.length === 0 ? <div style={{ textAlign: 'center', padding: '48px', color: '#9e9e9e', fontSize: '13px' }}>No prices found</div> : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: '#fafafa' }}>
+                {['Crop / Product', 'Price', 'Unit', 'Market', 'County', 'Trend'].map(h => (
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', borderBottom: '1px solid #eeeeee' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(p => {
+                const t = trendIcon(p.trend, p.change)
+                return (
+                  <tr key={p.id} style={{ background: p.submitted ? '#f9fbe7' : 'white' }}>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '600', color: '#212121', borderBottom: '1px solid #f5f5f5' }}>
+                      {p.name}{p.submitted && <span style={{ fontSize: '10px', background: '#f9fbe7', color: '#827717', padding: '1px 6px', borderRadius: '99px', marginLeft: '6px', fontWeight: '700' }}>Community</span>}
+                    </td>
+                    <td style={{ padding: '12px 14px', fontSize: '14px', fontWeight: '700', color: '#2e7d32', borderBottom: '1px solid #f5f5f5' }}>KSh {p.price.toLocaleString()}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>per {p.unit}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>{p.market}</td>
+                    <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}><span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '99px', background: '#f3e5f5', color: '#7b1fa2' }}>{p.county}</span></td>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '700', color: t.color, borderBottom: '1px solid #f5f5f5' }}>{t.icon} {t.label}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+//  SHAMBA BOT
+// ─────────────────────────────────────────────────────────
+function ShambaBot({ crops, tasks, livestock, sales, expenses, userName }) {
   const [messages, setMessages] = useState([
-    { role: 'bot', text: '🌾 Hello! I am Shamba Bot, your AI farming companion. Ask me anything about your farm!' }
+    {
+      role: 'bot',
+      text: `Habari ${userName}! 👋 Mimi ni Shamba Bot, msaidizi wako wa kilimo akili bandia.\n\nHello ${userName}! I'm Shamba Bot — a real AI farming assistant that knows your farm. Ask me anything about crops, livestock, pests, markets or farm planning! 🌱`
+    }
   ])
-  const [input, setInput] = useState('')
+  const [input, setInput]   = useState('')
   const [typing, setTyping] = useState(false)
+  const chatRef             = useRef(null)
 
-  const replies = {
-    weather: 'Current weather: 28°C, Sunny. Rain expected Friday. Good planting window today! 🌦️',
-    price: 'Maize: KSh 3,800/90kg. Tomatoes: KSh 6,200/crate (18% above average). 💹',
-    crop: 'Your maize is at 95% growth — ready to harvest within 5 days. 🌿',
-    profit: 'This month: Revenue KSh 35,000 · Expenses KSh 21,100 · Net Profit KSh 13,900 ✅',
-    pest: 'For tomato blight: apply Ridomil every 7 days. Avoid wetting leaves. 🐛',
-    default: 'I can help with crops, market prices, weather, profit and livestock. What do you need? 🌱'
+  const chips = [
+    '🌿 Best fertiliser for maize?',
+    '🐛 My tomatoes have brown spots',
+    '🐄 Why is milk production dropping?',
+    '💰 When should I sell my maize?',
+    '🌧️ How do I interpret the weather?',
+    '📋 How do I apply for AFC loan?',
+  ]
+
+  useEffect(() => {
+    chatRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, typing])
+
+  function buildContext() {
+    const activeCrops   = crops.filter(c => c.stage !== 'harvested')
+    const pendingTasks  = tasks.filter(t => !t.done)
+    const totalRevenue  = sales.reduce((sum, s) => sum + s.total, 0)
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+    return `FARMER: ${userName}
+ACTIVE CROPS: ${activeCrops.length === 0 ? 'None yet' : activeCrops.map(c => `${c.name} (${c.stage}, ${c.acres} acres)`).join(', ')}
+LIVESTOCK: ${livestock.length === 0 ? 'None yet' : livestock.map(l => `${l.name} - ${l.count} ${l.type}`).join(', ')}
+PENDING TASKS: ${pendingTasks.length === 0 ? 'None' : pendingTasks.map(t => t.title).join(', ')}
+REVENUE: KSh ${totalRevenue.toLocaleString()}
+EXPENSES: KSh ${totalExpenses.toLocaleString()}
+NET PROFIT: KSh ${(totalRevenue - totalExpenses).toLocaleString()}`
   }
 
-  function getReply(msg) {
-    const m = msg.toLowerCase()
-    if (m.includes('weather') || m.includes('rain')) return replies.weather
-    if (m.includes('price') || m.includes('market') || m.includes('sell')) return replies.price
-    if (m.includes('crop') || m.includes('maize') || m.includes('harvest')) return replies.crop
-    if (m.includes('profit') || m.includes('revenue') || m.includes('money')) return replies.profit
-    if (m.includes('pest') || m.includes('disease') || m.includes('blight')) return replies.pest
-    return replies.default
-  }
-
-  function sendMessage() {
-    if (!input.trim()) return
-    setMessages(prev => [...prev, { role: 'user', text: input }])
-    const userInput = input
+  async function send(msgText) {
+    const text = (msgText || input).trim()
+    if (!text || typing) return
+    setMessages(prev => [...prev, { role: 'user', text }])
     setInput('')
     setTyping(true)
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'bot', text: getReply(userInput) }])
+
+    try {
+      const history = messages.slice(1).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }))
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          system: `You are Shamba Bot, an expert AI farming assistant for AgriMateKE — a smart farming app for Kenyan farmers. You are warm, practical, and deeply knowledgeable about Kenyan agriculture.
+
+PERSONALITY:
+- Friendly and encouraging like a trusted agricultural officer
+- Use simple language farmers understand
+- Naturally mix in Swahili words (shamba, mazao, mifugo, bei)
+- Give specific actionable advice — never vague
+- Always relate advice to Kenyan context
+- Use bullet points and emojis to make responses easy to read
+
+EXPERTISE: Crops, livestock, soil health, fertilisers, pest control, market prices, weather interpretation, Kenya government programs (KALRO, AFA, AFC loans)
+
+CURRENT FARMER DATA:
+${buildContext()}
+
+RULES:
+- Always reference this farmer's actual data when relevant
+- If asked in Swahili respond in Swahili, if English respond in English
+- Never invent specific prices — refer them to the Market Prices section
+- Always end with one practical tip or follow-up question`,
+          messages: [...history, { role: 'user', content: text }]
+        })
+      })
+
+      const data  = await res.json()
+      const reply = data.content?.[0]?.text
+      if (!reply) throw new Error('Empty response')
+      setMessages(prev => [...prev, { role: 'bot', text: reply }])
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'bot', text: `⚠️ Shamba Bot is temporarily unavailable. Error: ${err.message}\n\nPlease check your internet connection and try again.` }])
+    } finally {
       setTyping(false)
-    }, 1200)
+    }
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 106px)', background: 'white', borderRadius: '16px', overflow: 'hidden', border: '1px solid #eeeeee' }}>
-      <div style={{ background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🤖</div>
+      <div style={{ background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+        <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🤖</div>
         <div>
           <div style={{ fontSize: '16px', fontWeight: '700', color: 'white' }}>🌾 Shamba Bot</div>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.65)' }}>AI-powered farming assistant · Online</div>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.65)' }}>Powered by Claude AI · Knows your farm</div>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4caf50' }} />
+          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>Online</span>
         </div>
       </div>
+
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', background: '#f9fafb', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {messages.map((msg, i) => (
-          <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row', maxWidth: '75%' }}>
+          <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row', maxWidth: '80%' }}>
             <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: msg.role === 'bot' ? '#e8f5e9' : '#2e7d32', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
               {msg.role === 'bot' ? '🤖' : '👤'}
             </div>
-            <div style={{ padding: '10px 14px', borderRadius: '18px', fontSize: '13px', lineHeight: 1.55, background: msg.role === 'bot' ? 'white' : '#2e7d32', color: msg.role === 'bot' ? '#212121' : 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', borderBottomLeftRadius: msg.role === 'bot' ? '4px' : '18px', borderBottomRightRadius: msg.role === 'user' ? '4px' : '18px' }}>
+            <div style={{ padding: '10px 14px', borderRadius: '18px', fontSize: '13px', lineHeight: 1.6, background: msg.role === 'bot' ? 'white' : '#2e7d32', color: msg.role === 'bot' ? '#212121' : 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', borderBottomLeftRadius: msg.role === 'bot' ? '4px' : '18px', borderBottomRightRadius: msg.role === 'user' ? '4px' : '18px', whiteSpace: 'pre-line' }}>
               {msg.text}
             </div>
           </div>
         ))}
         {typing && (
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', alignSelf: 'flex-start' }}>
             <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#e8f5e9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>🤖</div>
-            <div style={{ padding: '12px 16px', background: 'white', borderRadius: '18px', borderBottomLeftRadius: '4px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', gap: '4px' }}>
-              {[0, 1, 2].map(i => <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#9e9e9e', animation: 'blink 1.2s ease infinite', animationDelay: `${i * 0.2}s` }} />)}
+            <div style={{ padding: '12px 16px', background: 'white', borderRadius: '18px', borderBottomLeftRadius: '4px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', gap: '4px', alignItems: 'center' }}>
+              {[0, 1, 2].map(j => <div key={j} style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#9e9e9e', animation: 'blink 1.2s ease infinite', animationDelay: `${j * 0.2}s` }} />)}
             </div>
           </div>
         )}
-      </div>
-      <div style={{ padding: '8px 16px', background: 'white', borderTop: '1px solid #eeeeee', display: 'flex', gap: '6px', overflowX: 'auto' }}>
-        {['🌧️ Weather?', '💹 Market prices?', '🌿 My crops?', '📊 My profit?', '🐛 Pest advice?'].map(chip => (
-          <button key={chip} onClick={() => setInput(chip)} style={{ background: '#f1f8f1', color: '#2e7d32', border: '1px solid #a5d6a7', borderRadius: '99px', padding: '6px 14px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'Outfit, sans-serif' }}>{chip}</button>
-        ))}
-      </div>
-      <div style={{ padding: '12px 16px', background: 'white', borderTop: '1px solid #eeeeee', display: 'flex', gap: '10px', alignItems: 'center' }}>
-        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} placeholder="Ask Shamba Bot anything..." style={{ flex: 1, background: '#f5f5f5', border: '1.5px solid transparent', borderRadius: '99px', padding: '10px 16px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none' }} />
-        <button onClick={sendMessage} style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#2e7d32', border: 'none', color: 'white', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>➤</button>
-      </div>
-      <style>{`@keyframes blink { 0%,80%,100%{opacity:.25} 40%{opacity:1} }`}</style>
-    </div>
-  )
-}
-  
-function Sales() {
-  const [activeTab, setActiveTab] = useState('sales')
-  
-  const [sales, setSales] = useState([
-    { id: 1, item: 'Eggs (30 trays)', total: 12600, buyer: 'Naivas', date: '2026-05-01', cat: 'eggs' },
-    { id: 2, item: 'Kales 80kg', total: 2800, buyer: 'Githurai Market', date: '2026-04-30', cat: 'crops' },
-    { id: 3, item: 'Milk 120L', total: 6600, buyer: 'Brookside', date: '2026-04-28', cat: 'milk' },
-    { id: 4, item: 'Broilers x20', total: 13000, buyer: 'Local butcher', date: '2026-04-25', cat: 'livestock' },
-  ])
-
-  const [expenses, setExpenses] = useState([
-    { id: 1, desc: 'Layer mash - 10 bags', amount: 8500, cat: 'feed', date: '2026-04-28' },
-    { id: 2, desc: 'CAN Fertilizer x4', amount: 6200, cat: 'fertilizer', date: '2026-04-25' },
-    { id: 3, desc: 'Weeding labour', amount: 3600, cat: 'labour', date: '2026-04-20' },
-    { id: 4, desc: 'Newcastle vaccine', amount: 2800, cat: 'vet', date: '2026-04-10' },
-  ])
-
-  const [showForm, setShowForm] = useState(false)
-  const [newSale, setNewSale] = useState({ item: '', total: '', buyer: '', date: '' })
-  const [newExpense, setNewExpense] = useState({ desc: '', amount: '', cat: 'feed', date: '' })
-
-  // ── LESSON 2 IN ACTION: reduce calculating totals ──
-  const totalRevenue = sales.reduce((sum, s) => sum + s.total, 0)
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
-  const netProfit = totalRevenue - totalExpenses
-  const profitMargin = totalRevenue > 0 ? Math.round((netProfit / totalRevenue) * 100) : 0
-
-  function addSale() {
-    if (!newSale.item || !newSale.total) { alert('Item and total are required'); return }
-    setSales([{ ...newSale, id: Date.now(), total: parseFloat(newSale.total) }, ...sales])
-    setNewSale({ item: '', total: '', buyer: '', date: '' })
-    setShowForm(false)
-  }
-
-  function addExpense() {
-    if (!newExpense.amount) { alert('Amount is required'); return }
-    setExpenses([{ ...newExpense, id: Date.now(), amount: parseFloat(newExpense.amount) }, ...expenses])
-    setNewExpense({ desc: '', amount: '', cat: 'feed', date: '' })
-    setShowForm(false)
-  }
-
-  function deleteSale(id) { setSales(sales.filter(s => s.id !== id)) }
-  function deleteExpense(id) { setExpenses(expenses.filter(e => e.id !== id)) }
-
-  const inputStyle = {
-    width: '100%', padding: '10px 12px',
-    border: '1.5px solid #e0e0e0', borderRadius: '8px',
-    fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none'
-  }
-  const labelStyle = {
-    fontSize: '13px', fontWeight: '600',
-    display: 'block', marginBottom: '5px'
-  }
-
-  return (
-    <div>
-      {/* Page Header */}
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px' }}>
-          Sales & Expenses
-        </h2>
-        <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '2px' }}>
-          Track your income and spending
-        </p>
+        <div ref={chatRef} />
       </div>
 
-      {/* ── LESSON 2 IN ACTION: Metric cards ── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-        gap: '12px', marginBottom: '24px'
-      }}>
-        {[
-          { label: 'Total Revenue', value: `KSh ${totalRevenue.toLocaleString()}`, color: '#2e7d32', icon: '💰' },
-          { label: 'Total Expenses', value: `KSh ${totalExpenses.toLocaleString()}`, color: '#ef5350', icon: '📋' },
-          { label: 'Net Profit', value: `KSh ${Math.abs(netProfit).toLocaleString()}`, color: netProfit >= 0 ? '#2e7d32' : '#ef5350', icon: netProfit >= 0 ? '📈' : '📉' },
-          { label: 'Profit Margin', value: `${profitMargin}%`, color: profitMargin >= 0 ? '#0277bd' : '#ef5350', icon: '🎯' },
-        ].map(card => (
-          <div key={card.label} style={{
-            background: 'white', borderRadius: '12px',
-            padding: '16px', border: '1px solid #eeeeee'
-          }}>
-            <div style={{ fontSize: '22px', marginBottom: '6px' }}>{card.icon}</div>
-            <div style={{ fontSize: '11px', color: '#9e9e9e', textTransform: 'uppercase', fontWeight: '600' }}>
-              {card.label}
-            </div>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: card.color, marginTop: '4px' }}>
-              {card.value}
-            </div>
-          </div>
+      <div style={{ padding: '8px 16px', background: 'white', borderTop: '1px solid #eeeeee', display: 'flex', gap: '6px', overflowX: 'auto', flexShrink: 0 }}>
+        {chips.map(chip => (
+          <button key={chip} onClick={() => send(chip)} style={{ background: '#f1f8f1', color: '#2e7d32', border: '1px solid #a5d6a7', borderRadius: '99px', padding: '6px 14px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'Outfit, sans-serif', flexShrink: 0 }}>{chip}</button>
         ))}
       </div>
 
-      {/* ── LESSON 3 IN ACTION: Tab switcher ── */}
-      <div style={{
-        display: 'flex', gap: '0',
-        background: '#f5f5f5', borderRadius: '8px',
-        padding: '4px', marginBottom: '16px',
-        width: 'fit-content'
-      }}>
-        {['sales', 'expenses'].map(tab => (
-          <button
-            key={tab}
-            onClick={() => { setActiveTab(tab); setShowForm(false) }}
-            style={{
-              padding: '8px 20px', border: 'none', borderRadius: '6px',
-              fontFamily: 'Outfit, sans-serif', fontSize: '14px',
-              fontWeight: '600', cursor: 'pointer',
-              // ── LESSON 3: ternary operator deciding styles ──
-              background: activeTab === tab ? 'white' : 'transparent',
-              color: activeTab === tab ? '#1b5e20' : '#9e9e9e',
-              boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-            }}
-          >
-            {tab === 'sales' ? '💰 Sales' : '📋 Expenses'}
-          </button>
-        ))}
+      <div style={{ padding: '12px 16px', background: 'white', borderTop: '1px solid #eeeeee', display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
+        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Ask Shamba Bot anything about your farm..." style={{ flex: 1, background: '#f5f5f5', border: '1.5px solid transparent', borderRadius: '99px', padding: '10px 16px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none' }} />
+        <button onClick={() => send()} disabled={!input.trim() || typing} style={{ width: '40px', height: '40px', borderRadius: '50%', background: !input.trim() || typing ? '#e0e0e0' : '#2e7d32', border: 'none', color: 'white', fontSize: '16px', cursor: !input.trim() || typing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>➤</button>
       </div>
 
-      {/* Add button */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '14px' }}>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          style={{
-            background: '#2e7d32', color: 'white', border: 'none',
-            borderRadius: '8px', padding: '10px 18px',
-            fontSize: '14px', fontWeight: '600',
-            cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
-          }}
-        >
-          {/* ── LESSON 3: && operator ── */}
-          {activeTab === 'sales' ? '+ Record Sale' : '+ Add Expense'}
-        </button>
-      </div>
-
-      {/* ── LESSON 3 IN ACTION: Conditional form ── */}
-      {showForm && activeTab === 'sales' && (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid #eeeeee' }}>
-          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>New Sale</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-            <div>
-              <label style={labelStyle}>Item Sold *</label>
-              <input style={inputStyle} value={newSale.item} onChange={e => setNewSale({ ...newSale, item: e.target.value })} placeholder="e.g. Eggs (30 trays)"/>
-            </div>
-            <div>
-              <label style={labelStyle}>Total (KSh) *</label>
-              <input style={inputStyle} type="number" value={newSale.total} onChange={e => setNewSale({ ...newSale, total: e.target.value })} placeholder="0"/>
-            </div>
-            <div>
-              <label style={labelStyle}>Buyer</label>
-              <input style={inputStyle} value={newSale.buyer} onChange={e => setNewSale({ ...newSale, buyer: e.target.value })} placeholder="e.g. Naivas"/>
-            </div>
-            <div>
-              <label style={labelStyle}>Date</label>
-              <input style={inputStyle} type="date" value={newSale.date} onChange={e => setNewSale({ ...newSale, date: e.target.value })}/>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={addSale} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Sale</button>
-            <button onClick={() => setShowForm(false)} style={{ background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {showForm && activeTab === 'expenses' && (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid #eeeeee' }}>
-          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>New Expense</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-            <div>
-              <label style={labelStyle}>Description</label>
-              <input style={inputStyle} value={newExpense.desc} onChange={e => setNewExpense({ ...newExpense, desc: e.target.value })} placeholder="e.g. Layer mash 10 bags"/>
-            </div>
-            <div>
-              <label style={labelStyle}>Amount (KSh) *</label>
-              <input style={inputStyle} type="number" value={newExpense.amount} onChange={e => setNewExpense({ ...newExpense, amount: e.target.value })} placeholder="0"/>
-            </div>
-            <div>
-              <label style={labelStyle}>Category</label>
-              <select style={inputStyle} value={newExpense.cat} onChange={e => setNewExpense({ ...newExpense, cat: e.target.value })}>
-                {['feed','fertilizer','seeds','labour','vet','pesticide','equipment','transport','other'].map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Date</label>
-              <input style={inputStyle} type="date" value={newExpense.date} onChange={e => setNewExpense({ ...newExpense, date: e.target.value })}/>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={addExpense} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Expense</button>
-            <button onClick={() => setShowForm(false)} style={{ background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* ── LESSON 3 IN ACTION: Show sales OR expenses based on tab ── */}
-      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #eeeeee', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #eeeeee' }}>
-              {activeTab === 'sales'
-                ? ['Item', 'Buyer', 'Total', 'Date', ''].map(h => (
-                    <th key={h} style={{ fontSize: '11px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', padding: '12px 16px', textAlign: 'left', letterSpacing: '0.05em' }}>{h}</th>
-                  ))
-                : ['Description', 'Category', 'Amount', 'Date', ''].map(h => (
-                    <th key={h} style={{ fontSize: '11px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', padding: '12px 16px', textAlign: 'left', letterSpacing: '0.05em' }}>{h}</th>
-                  ))
-              }
-            </tr>
-          </thead>
-          <tbody>
-            {/* ── LESSON 3: Show sales rows OR expense rows ── */}
-            {activeTab === 'sales'
-              ? sales.map(s => (
-                  <tr key={s.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
-                    <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '600' }}>{s.item}</td>
-                    <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9e9e9e' }}>{s.buyer || '—'}</td>
-                    <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '700', color: '#2e7d32' }}>KSh {s.total.toLocaleString()}</td>
-                    <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9e9e9e' }}>{s.date}</td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <button onClick={() => deleteSale(s.id)} style={{ background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '12px' }}>🗑️</button>
-                    </td>
-                  </tr>
-                ))
-              : expenses.map(e => (
-                  <tr key={e.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
-                    <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '600' }}>{e.desc}</td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{ background: '#f5f5f5', color: '#616161', fontSize: '11px', fontWeight: '600', padding: '2px 10px', borderRadius: '99px' }}>{e.cat}</span>
-                    </td>
-                    <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '700', color: '#ef5350' }}>KSh {e.amount.toLocaleString()}</td>
-                    <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9e9e9e' }}>{e.date}</td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <button onClick={() => deleteExpense(e.id)} style={{ background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '12px' }}>🗑️</button>
-                    </td>
-                  </tr>
-                ))
-            }
-          </tbody>
-        </table>
-
-        {/* Empty state */}
-        {activeTab === 'sales' && sales.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '48px', color: '#9e9e9e' }}>
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>💰</div>
-            <div style={{ fontSize: '14px' }}>No sales recorded yet</div>
-          </div>
-        )}
-        {activeTab === 'expenses' && expenses.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '48px', color: '#9e9e9e' }}>
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📋</div>
-            <div style={{ fontSize: '14px' }}>No expenses recorded yet</div>
-          </div>
-        )}
-      </div>
+      <style>{`@keyframes blink { 0%, 80%, 100% { opacity: 0.25 } 40% { opacity: 1 } }`}</style>
     </div>
   )
 }
 
-function Tasks() {
-  const [tasks, setTasks] = useState([
-    { id: 1, title: 'Vaccinate layers — Newcastle', due: '2026-05-03', priority: 'high', done: false },
-    { id: 2, title: 'Apply CAN to maize field', due: '2026-05-10', priority: 'medium', done: false },
-    { id: 3, title: 'Restock layer mash', due: '2026-05-01', priority: 'high', done: false },
-    { id: 4, title: 'Morning milking', due: '2026-05-07', priority: 'medium', done: true },
-    { id: 5, title: 'Spray tomatoes for blight', due: '2026-05-12', priority: 'medium', done: false },
-  ])
-
+// ─────────────────────────────────────────────────────────
+//  VET DIRECTORY
+// ─────────────────────────────────────────────────────────
+function VetDirectory() {
+  const [search, setSearch]     = useState('')
+  const [county, setCounty]     = useState('all')
   const [showForm, setShowForm] = useState(false)
-  const [newTask, setNewTask] = useState({ title: '', due: '', priority: 'medium' })
-  const [overdueCount, setOverdueCount] = useState(0)
+  const [submitted, setSubmitted] = useState([])
+  const [form, setForm] = useState({ name: '', phone: '', county: '', speciality: '', location: '', available: true })
 
-  // ── useEffect IN ACTION ──────────────────────────────
-  // This runs every time the tasks array changes
-  // It checks for overdue tasks and updates the count
-  useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10)
-    const overdue = tasks.filter(t => !t.done && t.due < today)
-    setOverdueCount(overdue.length)
-  }, [tasks]) // the [tasks] means: run this effect when tasks changes
+  const vets = [
+    { id: 1,  name: 'Dr. James Mutua',      phone: '0712 345 678', county: 'Nairobi',     speciality: 'Dairy Cattle',       location: 'Kasarani',         available: true  },
+    { id: 2,  name: 'Dr. Amina Hassan',     phone: '0723 456 789', county: 'Nakuru',      speciality: 'Poultry & Livestock', location: 'Nakuru Town',      available: true  },
+    { id: 3,  name: 'Dr. Peter Kamau',      phone: '0734 567 890', county: 'Kiambu',      speciality: 'General Livestock',  location: 'Thika',            available: false },
+    { id: 4,  name: 'Dr. Grace Wanjiku',    phone: '0745 678 901', county: 'Meru',        speciality: 'Dairy & Beef',       location: 'Meru Town',        available: true  },
+    { id: 5,  name: 'Dr. Samuel Ochieng',   phone: '0756 789 012', county: 'Kisumu',      speciality: 'Aquaculture & Livestock', location: 'Kisumu Town', available: true  },
+    { id: 6,  name: 'Dr. Faith Chebet',     phone: '0767 890 123', county: 'Uasin Gishu', speciality: 'Dairy Cattle',       location: 'Eldoret',          available: true  },
+    { id: 7,  name: 'Dr. John Mwangi',      phone: '0778 901 234', county: 'Nyeri',       speciality: 'Small Animals',      location: 'Nyeri Town',       available: false },
+    { id: 8,  name: 'Dr. Beatrice Akinyi',  phone: '0789 012 345', county: 'Siaya',       speciality: 'Poultry',            location: 'Siaya Town',       available: true  },
+    { id: 9,  name: 'Dr. Michael Kipchoge', phone: '0790 123 456', county: 'Nandi',       speciality: 'Dairy & Beef',       location: 'Kapsabet',         available: true  },
+    { id: 10, name: 'Dr. Esther Wambua',    phone: '0701 234 567', county: 'Machakos',    speciality: 'General Livestock',  location: 'Machakos Town',    available: true  },
+    { id: 11, name: 'Dr. Robert Otieno',    phone: '0712 345 670', county: 'Homa Bay',    speciality: 'Livestock & Poultry', location: 'Homa Bay Town',   available: false },
+    { id: 12, name: 'Dr. Caroline Njeri',   phone: '0723 456 781', county: 'Kirinyaga',   speciality: 'Dairy Cattle',       location: 'Kerugoya',         available: true  },
+  ]
 
-  const today = new Date().toISOString().slice(0, 10)
+  const allVets = [...vets, ...submitted]
+  const counties = ['all', ...new Set(allVets.map(v => v.county))].sort()
 
-  // Same logic from our JS lesson — now inside React
-  const pending = tasks.filter(t => !t.done).sort((a, b) => a.due > b.due ? 1 : -1)
-  const completed = tasks.filter(t => t.done)
-  const overdueTasks = tasks.filter(t => !t.done && t.due < today)
+  const filtered = allVets.filter(v => {
+    const matchCounty = county === 'all' || v.county === county
+    const matchSearch = v.name.toLowerCase().includes(search.toLowerCase()) ||
+                        v.speciality.toLowerCase().includes(search.toLowerCase()) ||
+                        v.location.toLowerCase().includes(search.toLowerCase())
+    return matchCounty && matchSearch
+  })
 
-  function addTask() {
-    if (!newTask.title) { alert('Task title is required'); return }
-    setTasks([...tasks, { ...newTask, id: Date.now(), done: false }])
-    setNewTask({ title: '', due: '', priority: 'medium' })
+  function handleSubmit() {
+    if (!form.name.trim() || !form.phone.trim() || !form.county.trim()) return alert('Name, phone and county are required')
+    setSubmitted(prev => [...prev, { ...form, id: nid(), submitted: true }])
+    setForm({ name: '', phone: '', county: '', speciality: '', location: '', available: true })
     setShowForm(false)
   }
 
-  function completeTask(id) {
-    setTasks(tasks.map(t => t.id === id ? { ...t, done: true } : t))
-  }
-
-  function deleteTask(id) {
-    setTasks(tasks.filter(t => t.id !== id))
-  }
-
-  const priorityColor = { low: '#29b6f6', medium: '#ffca28', high: '#ef5350' }
-  const inputStyle = { width: '100%', padding: '10px 12px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none' }
-  const labelStyle = { fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '5px' }
-
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div>
-          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px' }}>Tasks & Reminders</h2>
-          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '2px' }}>
-            {pending.length} pending · {completed.length} completed
-          </p>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>Vet Directory</h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>Find veterinarians across Kenya</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
-          + Add Task
-        </button>
+        <button onClick={() => setShowForm(true)} style={{ padding: '10px 18px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🏥 Add Vet</button>
       </div>
 
-      {/* ── useEffect RESULT: Overdue alert banner ── */}
-      {overdueCount > 0 && (
-        <div style={{ background: '#fff8e1', border: '1px solid #ffca28', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '20px' }}>⚠️</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '13px', fontWeight: '700', color: '#f57f17' }}>
-              {overdueCount} overdue task{overdueCount > 1 ? 's' : ''} need your attention
-            </div>
-            <div style={{ fontSize: '12px', color: '#f57f17', marginTop: '2px' }}>
-              {overdueTasks.map(t => t.title).join(' · ')}
-            </div>
-          </div>
-        </div>
-      )}
+      <div style={{ background: '#e3f2fd', border: '1px solid #90caf9', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{ fontSize: '20px' }}>💡</span>
+        <div style={{ fontSize: '13px', color: '#0277bd' }}>Know a vet not listed here? Add them to help fellow farmers in your area.</div>
+      </div>
 
-      {/* Add Task Form */}
       {showForm && (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid #eeeeee' }}>
-          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>New Task</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelStyle}>Task Title *</label>
-              <input
-                style={inputStyle}
-                value={newTask.title}
-                onChange={e => setNewTask({ ...newTask, title: e.target.value })}
-                placeholder="e.g. Vaccinate layers"
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Due Date</label>
-              <input
-                style={inputStyle}
-                type="date"
-                value={newTask.due}
-                onChange={e => setNewTask({ ...newTask, due: e.target.value })}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Priority</label>
-              <select
-                style={inputStyle}
-                value={newTask.priority}
-                onChange={e => setNewTask({ ...newTask, priority: e.target.value })}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={addTask} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Task</button>
-            <button onClick={() => setShowForm(false)} style={{ background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* Two columns - pending and completed */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-
-        {/* Pending Tasks */}
-        <div>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>
-            Pending ({pending.length})
-          </div>
-
-          {pending.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '32px', color: '#9e9e9e', background: 'white', borderRadius: '12px', border: '1px solid #eeeeee' }}>
-              <div style={{ fontSize: '28px', marginBottom: '8px' }}>🎉</div>
-              <div style={{ fontSize: '13px' }}>No pending tasks!</div>
-            </div>
-          )}
-
-          {pending.map(task => {
-            const isOverdue = !task.done && task.due < today
-            return (
-              <div
-                key={task.id}
-                style={{
-                  background: 'white',
-                  borderRadius: '10px',
-                  padding: '12px 14px',
-                  marginBottom: '8px',
-                  border: `1px solid ${isOverdue ? '#ffcdd2' : '#eeeeee'}`,
-                  borderLeft: `4px solid ${isOverdue ? '#ef5350' : priorityColor[task.priority]}`,
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '10px',
-                }}
-              >
-                {/* Complete button */}
-                <button
-                  onClick={() => completeTask(task.id)}
-                  style={{
-                    width: '20px', height: '20px', borderRadius: '50%',
-                    border: `2px solid ${priorityColor[task.priority]}`,
-                    background: 'transparent', cursor: 'pointer',
-                    flexShrink: 0, marginTop: '1px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}
-                />
-
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#212121' }}>
-                    {task.title}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                    <span style={{ fontSize: '11px', color: isOverdue ? '#ef5350' : '#9e9e9e', fontWeight: isOverdue ? '700' : '400' }}>
-                      {isOverdue ? '⚠️ Overdue · ' : ''}{task.due}
-                    </span>
-                    <span style={{ background: priorityColor[task.priority] + '22', color: priorityColor[task.priority], fontSize: '10px', fontWeight: '700', padding: '1px 7px', borderRadius: '99px' }}>
-                      {task.priority}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => deleteTask(task.id)}
-                  style={{ background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontSize: '12px', flexShrink: 0 }}
-                >
-                  🗑️
-                </button>
+        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #eeeeee', marginBottom: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>🏥 Add a Veterinarian</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            {[
+              { label: 'Full Name *', key: 'name', placeholder: 'e.g. Dr. Jane Doe' },
+              { label: 'Phone Number *', key: 'phone', placeholder: 'e.g. 0712 345 678' },
+              { label: 'County *', key: 'county', placeholder: 'e.g. Nakuru' },
+              { label: 'Speciality', key: 'speciality', placeholder: 'e.g. Dairy Cattle' },
+              { label: 'Location / Town', key: 'location', placeholder: 'e.g. Nakuru Town' },
+            ].map(f => (
+              <div key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>{f.label}</label>
+                <input value={form[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.placeholder} style={inputStyle} />
               </div>
-            )
-          })}
-        </div>
-
-        {/* Completed Tasks */}
-        <div>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>
-            Completed ({completed.length})
-          </div>
-
-          {completed.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '32px', color: '#9e9e9e', background: 'white', borderRadius: '12px', border: '1px solid #eeeeee' }}>
-              <div style={{ fontSize: '28px', marginBottom: '8px' }}>📋</div>
-              <div style={{ fontSize: '13px' }}>No completed tasks yet</div>
-            </div>
-          )}
-
-          {completed.map(task => (
-            <div
-              key={task.id}
-              style={{
-                background: 'white', borderRadius: '10px',
-                padding: '12px 14px', marginBottom: '8px',
-                border: '1px solid #eeeeee', opacity: 0.6,
-                display: 'flex', alignItems: 'center', gap: '10px',
-              }}
-            >
-              <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#4caf50', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ color: 'white', fontSize: '11px' }}>✓</span>
-              </div>
-              <div style={{ fontSize: '13px', color: '#9e9e9e', textDecoration: 'line-through', flex: 1 }}>
-                {task.title}
-              </div>
-              <button onClick={() => deleteTask(task.id)} style={{ background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontSize: '12px' }}>🗑️</button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function Livestock() {
-  const [groups, setGroups] = useState([
-    { id: 1, emoji: '🐔', name: 'Layer Flock A', type: 'Layers', count: 120, eggs: 98, milk: 0, notes: 'Lohmann Brown' },
-    { id: 2, emoji: '🐓', name: 'Broilers Batch 3', type: 'Broilers', count: 220, eggs: 0, milk: 0, notes: 'Ross 308, 4 weeks' },
-    { id: 3, emoji: '🐄', name: 'Dairy Herd', type: 'Dairy', count: 8, eggs: 0, milk: 48, notes: 'Friesian crossbreeds' },
-  ])
-
-  const [records, setRecords] = useState([
-    { id: 1, groupId: 1, type: 'eggs', qty: 98, unit: 'eggs', date: '2026-05-08' },
-    { id: 2, groupId: 3, type: 'milk', qty: 48, unit: 'litres', date: '2026-05-08' },
-    { id: 3, groupId: 2, type: 'feed', qty: 15, unit: 'kg', date: '2026-05-08' },
-  ])
-
-  const [showGroupForm, setShowGroupForm] = useState(false)
-  const [showRecordForm, setShowRecordForm] = useState(false)
-  const [selectedGroup, setSelectedGroup] = useState(null)
-
-  const [newGroup, setNewGroup] = useState({
-    name: '', type: 'Layers', count: '', notes: ''
-  })
-
-  const [newRecord, setNewRecord] = useState({
-    groupId: '', type: 'eggs', qty: '', date: new Date().toISOString().slice(0, 10)
-  })
-
-  // ── LIFTING STATE UP in action ──
-  // These totals are computed from groups
-  // If Dashboard was a sibling it would receive these as props
-  const totalAnimals = groups.reduce((sum, g) => sum + g.count, 0)
-  const totalEggs = groups.reduce((sum, g) => sum + g.eggs, 0)
-  const totalMilk = groups.reduce((sum, g) => sum + g.milk, 0)
-
-  const typeEmoji = {
-    Layers: '🐔', Broilers: '🐓', Dairy: '🐄',
-    Goats: '🐐', Pigs: '🐷', Other: '🐾'
-  }
-
-  function addGroup() {
-    if (!newGroup.name) { alert('Group name is required'); return }
-    const emoji = typeEmoji[newGroup.type] || '🐾'
-    setGroups([...groups, {
-      ...newGroup,
-      id: Date.now(),
-      emoji,
-      count: parseInt(newGroup.count) || 0,
-      eggs: 0,
-      milk: 0
-    }])
-    setNewGroup({ name: '', type: 'Layers', count: '', notes: '' })
-    setShowGroupForm(false)
-  }
-
-  function saveRecord() {
-    if (!newRecord.groupId || !newRecord.qty) {
-      alert('Select a group and enter quantity'); return
-    }
-    const qty = parseFloat(newRecord.qty)
-    const gid = parseInt(newRecord.groupId)
-
-    // Update group daily totals
-    setGroups(groups.map(g => {
-      if (g.id !== gid) return g
-      if (newRecord.type === 'eggs') return { ...g, eggs: qty }
-      if (newRecord.type === 'milk') return { ...g, milk: qty }
-      return g
-    }))
-
-    // Add to records log
-    const group = groups.find(g => g.id === gid)
-    const units = { eggs: 'eggs', milk: 'litres', feed: 'kg', mortality: 'birds', vaccination: 'birds' }
-    setRecords([{
-      id: Date.now(),
-      groupId: gid,
-      groupName: group?.name,
-      type: newRecord.type,
-      qty,
-      unit: units[newRecord.type],
-      date: newRecord.date
-    }, ...records])
-
-    setNewRecord({ groupId: '', type: 'eggs', qty: '', date: new Date().toISOString().slice(0, 10) })
-    setShowRecordForm(false)
-  }
-
-  function deleteGroup(id) {
-    setGroups(groups.filter(g => g.id !== id))
-  }
-
-  const inputStyle = {
-    width: '100%', padding: '10px 12px',
-    border: '1.5px solid #e0e0e0', borderRadius: '8px',
-    fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none'
-  }
-  const labelStyle = {
-    fontSize: '13px', fontWeight: '600',
-    display: 'block', marginBottom: '5px'
-  }
-
-  return (
-    <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div>
-          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px' }}>Livestock & Poultry</h2>
-          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '2px' }}>
-            {totalAnimals} animals across {groups.length} groups
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={() => { setShowRecordForm(!showRecordForm); setShowGroupForm(false) }}
-            style={{ background: 'white', color: '#2e7d32', border: '1.5px solid #2e7d32', borderRadius: '8px', padding: '10px 16px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
-          >
-            📋 Record Daily
-          </button>
-          <button
-            onClick={() => { setShowGroupForm(!showGroupForm); setShowRecordForm(false) }}
-            style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
-          >
-            + Add Group
-          </button>
-        </div>
-      </div>
-
-      {/* Summary metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-        {[
-          { label: 'Total Animals', value: totalAnimals, icon: '🐾', color: '#212121' },
-          { label: 'Eggs Today', value: totalEggs, icon: '🥚', color: '#2e7d32' },
-          { label: 'Milk Today', value: totalMilk + 'L', icon: '🥛', color: '#0277bd' },
-          { label: 'Groups', value: groups.length, icon: '🏡', color: '#7b1fa2' },
-        ].map(m => (
-          <div key={m.label} style={{ background: 'white', borderRadius: '12px', padding: '14px 16px', border: '1px solid #eeeeee' }}>
-            <div style={{ fontSize: '22px', marginBottom: '6px' }}>{m.icon}</div>
-            <div style={{ fontSize: '11px', color: '#9e9e9e', textTransform: 'uppercase', fontWeight: '600' }}>{m.label}</div>
-            <div style={{ fontSize: '22px', fontWeight: '700', color: m.color, marginTop: '4px' }}>{m.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Add Group Form */}
-      {showGroupForm && (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid #eeeeee' }}>
-          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>New Livestock Group</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-            <div>
-              <label style={labelStyle}>Group Name *</label>
-              <input style={inputStyle} value={newGroup.name} onChange={e => setNewGroup({ ...newGroup, name: e.target.value })} placeholder="e.g. Layer Flock B"/>
-            </div>
-            <div>
-              <label style={labelStyle}>Type</label>
-              <select style={inputStyle} value={newGroup.type} onChange={e => setNewGroup({ ...newGroup, type: e.target.value })}>
-                {['Layers', 'Broilers', 'Dairy', 'Goats', 'Pigs', 'Other'].map(t => (
-                  <option key={t} value={t}>{typeEmoji[t]} {t}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Number of Animals</label>
-              <input style={inputStyle} type="number" value={newGroup.count} onChange={e => setNewGroup({ ...newGroup, count: e.target.value })} placeholder="100"/>
-            </div>
-            <div>
-              <label style={labelStyle}>Notes (optional)</label>
-              <input style={inputStyle} value={newGroup.notes} onChange={e => setNewGroup({ ...newGroup, notes: e.target.value })} placeholder="Breed, age, etc."/>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={addGroup} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Group</button>
-            <button onClick={() => setShowGroupForm(false)} style={{ background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* Record Daily Form */}
-      {showRecordForm && (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid #eeeeee' }}>
-          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>Record Daily Production</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-            <div>
-              <label style={labelStyle}>Livestock Group *</label>
-              <select style={inputStyle} value={newRecord.groupId} onChange={e => setNewRecord({ ...newRecord, groupId: e.target.value })}>
-                <option value="">Select group...</option>
-                {groups.map(g => <option key={g.id} value={g.id}>{g.emoji} {g.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Record Type</label>
-              <select style={inputStyle} value={newRecord.type} onChange={e => setNewRecord({ ...newRecord, type: e.target.value })}>
-                <option value="eggs">🥚 Eggs collected</option>
-                <option value="milk">🥛 Milk (litres)</option>
-                <option value="feed">🌾 Feed given (kg)</option>
-                <option value="mortality">💀 Mortality</option>
-                <option value="vaccination">💉 Vaccination</option>
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Quantity</label>
-              <input style={inputStyle} type="number" value={newRecord.qty} onChange={e => setNewRecord({ ...newRecord, qty: e.target.value })} placeholder="0"/>
-            </div>
-            <div>
-              <label style={labelStyle}>Date</label>
-              <input style={inputStyle} type="date" value={newRecord.date} onChange={e => setNewRecord({ ...newRecord, date: e.target.value })}/>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={saveRecord} style={{ background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Record</button>
-            <button onClick={() => setShowRecordForm(false)} style={{ background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* Groups Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', marginBottom: '24px' }}>
-        {groups.map(group => (
-          <div key={group.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #eeeeee' }}>
-            <div style={{ fontSize: '32px', marginBottom: '10px' }}>{group.emoji}</div>
-            <div style={{ fontSize: '15px', fontWeight: '700', color: '#212121' }}>{group.name}</div>
-            <div style={{ fontSize: '12px', color: '#9e9e9e', marginTop: '2px' }}>{group.type}</div>
-            {group.notes && <div style={{ fontSize: '11px', color: '#bdbdbd', marginTop: '4px' }}>{group.notes}</div>}
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginTop: '14px' }}>
-              {[
-                { label: 'Count', value: group.count },
-                { label: 'Eggs', value: group.eggs || '—' },
-                { label: 'Milk L', value: group.milk || '—' },
-              ].map(stat => (
-                <div key={stat.label} style={{ background: '#f9fafb', borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '10px', color: '#9e9e9e', fontWeight: '700', textTransform: 'uppercase' }}>{stat.label}</div>
-                  <div style={{ fontSize: '18px', fontWeight: '700', color: '#212121', marginTop: '2px' }}>{stat.value}</div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              <button
-                onClick={() => { setSelectedGroup(group.id); setNewRecord({ ...newRecord, groupId: String(group.id) }); setShowRecordForm(true); setShowGroupForm(false) }}
-                style={{ flex: 1, background: '#f1f8f1', color: '#2e7d32', border: '1px solid #a5d6a7', borderRadius: '8px', padding: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
-              >
-                📋 Record
-              </button>
-              <button
-                onClick={() => deleteGroup(group.id)}
-                style={{ background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '8px', padding: '8px 12px', cursor: 'pointer', fontSize: '12px' }}
-              >
-                🗑️
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Recent Records Log */}
-      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #eeeeee', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #eeeeee', fontSize: '15px', fontWeight: '600' }}>
-          Recent Records
-        </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #eeeeee' }}>
-              {['Group', 'Type', 'Quantity', 'Date'].map(h => (
-                <th key={h} style={{ fontSize: '11px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', padding: '10px 16px', textAlign: 'left', letterSpacing: '0.05em' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {records.slice(0, 8).map(r => (
-              <tr key={r.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
-                <td style={{ padding: '11px 16px', fontSize: '13px', fontWeight: '600' }}>
-                  {r.groupName || groups.find(g => g.id === r.groupId)?.name || '—'}
-                </td>
-                <td style={{ padding: '11px 16px' }}>
-                  <span style={{ background: '#f1f8f1', color: '#2e7d32', fontSize: '11px', fontWeight: '700', padding: '2px 10px', borderRadius: '99px' }}>
-                    {r.type}
-                  </span>
-                </td>
-                <td style={{ padding: '11px 16px', fontSize: '13px', fontWeight: '600', color: '#212121' }}>
-                  {r.qty} {r.unit}
-                </td>
-                <td style={{ padding: '11px 16px', fontSize: '13px', color: '#9e9e9e' }}>
-                  {r.date}
-                </td>
-              </tr>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function Weather() {
-  const [weather, setWeather] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [county, setCounty] = useState('Nairobi')
-
-
-
-const counties = [
-  'Nairobi','Mombasa','Kisumu','Nakuru','Eldoret',
-  'Kiambu','Machakos','Kajiado','Murang\'a','Nyeri',
-  'Kirinyaga','Nyandarua','Laikipia','Meru','Tharaka Nithi',
-  'Embu','Kitui','Machakos','Makueni','Garissa',
-  'Wajir','Mandera','Marsabit','Isiolo','Samburu',
-  'Trans Nzoia','Uasin Gishu','Elgeyo Marakwet','Nandi','Baringo',
-  'Turkana','West Pokot','Kakamega','Vihiga','Bungoma',
-  'Busia','Siaya','Kisumu','Homa Bay','Migori',
-  'Kisii','Nyamira','Bomet','Kericho','Narok',
-  'Taita Taveta','Kwale','Kilifi','Tana River','Lamu'
-]
-
-
-  // ── async/await IN ACTION ────────────────────────────
-  // This runs every time county changes
-  useEffect(() => {
-    async function loadWeather() {
-  setLoading(true)
-  setError(null)
-  try {
-    // ── REAL API KEY ──────────────────────────────────
-    // Replace with your key from openweathermap.org
-    const API_KEY = 'baa6a5ba622c5787415f533de7a9b9ac'
-
-    if (API_KEY !== 'baa6a5ba622c5787415f533de7a9b9ac') {
-      // ── REAL API CALL ─────────────────────────────
-      const [currentRes, forecastRes] = await Promise.all([
-        fetch(`https://api.openweathermap.org/data/2.5/weather?q=${county},KE&appid=${API_KEY}&units=metric`),
-        fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${county},KE&appid=${API_KEY}&units=metric&cnt=7`)
-      ])
-
-      const current = await currentRes.json()
-      const forecastData = await forecastRes.json()
-
-      const conditionMap = {
-        'Clear': '☀️', 'Clouds': '⛅', 'Rain': '🌧️',
-        'Drizzle': '🌦️', 'Thunderstorm': '⛈️',
-        'Snow': '❄️', 'Mist': '🌫️', 'Fog': '🌫️',
-        'Haze': '🌫️', 'Dust': '💨', 'Smoke': '💨'
-      }
-
-      const weatherIcon = conditionMap[current.weather[0].main] || '🌤️'
-      const condition = current.weather[0].description
-        .split(' ')
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ')
-
-      const forecast = forecastData.list.slice(0, 7).map((item, i) => {
-        const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-        const date = new Date(item.dt * 1000)
-        return {
-          day: days[date.getDay()],
-          icon: conditionMap[item.weather[0].main] || '🌤️',
-          high: Math.round(item.main.temp_max),
-          low: Math.round(item.main.temp_min),
-          rain: item.pop ? Math.round(item.pop * 100) + '%' : '0%'
-        }
-      })
-
-      setWeather({
-        county,
-        temp: Math.round(current.main.temp),
-        condition,
-        humidity: current.main.humidity,
-        wind: Math.round(current.wind.speed * 3.6),
-        icon: weatherIcon,
-        forecast,
-        advisory: getAdvisory(condition)
-      })
-
-    } else {
-      // ── MOCK DATA (until you add your API key) ────
-      await new Promise(r => setTimeout(r, 600))
-      const mockData = {
-        Nairobi:   { temp: 22, condition: 'Partly Cloudy', humidity: 68, wind: 14, icon: '⛅' },
-        Kiambu:    { temp: 20, condition: 'Light Rain', humidity: 75, wind: 10, icon: '🌧️' },
-        Nakuru:    { temp: 25, condition: 'Sunny', humidity: 55, wind: 18, icon: '☀️' },
-        Meru:      { temp: 19, condition: 'Cloudy', humidity: 72, wind: 8, icon: '☁️' },
-        Kisumu:    { temp: 30, condition: 'Hot and Sunny', humidity: 60, wind: 12, icon: '☀️' },
-        Machakos:  { temp: 27, condition: 'Sunny', humidity: 50, wind: 16, icon: '☀️' },
-        Kakamega:  { temp: 24, condition: 'Thunderstorm', humidity: 85, wind: 20, icon: '⛈️' },
-        Mombasa:   { temp: 32, condition: 'Hot and Humid', humidity: 88, wind: 15, icon: '🌤️' },
-        Eldoret:   { temp: 16, condition: 'Cool and Cloudy', humidity: 65, wind: 25, icon: '☁️' },
-        Nyeri:     { temp: 17, condition: 'Misty', humidity: 80, wind: 6, icon: '🌫️' },
-        Turkana:   { temp: 38, condition: 'Very Hot', humidity: 20, wind: 30, icon: '🔥' },
-        Lamu:      { temp: 31, condition: 'Coastal Breeze', humidity: 82, wind: 18, icon: '🌤️' },
-      }
-      const current = mockData[county] || { temp: 24, condition: 'Partly Cloudy', humidity: 65, wind: 12, icon: '⛅' }
-      setWeather({
-        county,
-        ...current,
-        forecast: [
-          { day: 'Thu', icon: '⛅', high: 23, low: 15, rain: '20%' },
-          { day: 'Fri', icon: '🌧️', high: 19, low: 14, rain: '80%' },
-          { day: 'Sat', icon: '🌧️', high: 18, low: 13, rain: '75%' },
-          { day: 'Sun', icon: '🌤️', high: 21, low: 14, rain: '15%' },
-          { day: 'Mon', icon: '☀️', high: 25, low: 16, rain: '5%' },
-          { day: 'Tue', icon: '☀️', high: 26, low: 17, rain: '5%' },
-          { day: 'Wed', icon: '⛅', high: 24, low: 15, rain: '25%' },
-        ],
-        advisory: getAdvisory(current.condition)
-      })
-    }
-  } catch (err) {
-    setError('Failed to load weather. Check your connection and try again.')
-  } finally {
-    setLoading(false)
-  }
-}
-    
-  loadWeather()
-  }, [county])
-
-  function getAdvisory(condition) {
-    if (condition.includes('Rain') || condition.includes('Thunder')) {
-      return [
-        { icon: '🌧️', type: 'warning', title: 'Rain expected', body: 'Harvest kales and other leafy vegetables before the rain. Delay fertilizer application.' },
-        { icon: '⚠️', type: 'warning', title: 'Blight risk elevated', body: 'High humidity increases tomato blight risk. Apply Ridomil or copper fungicide today.' },
-        { icon: '💧', type: 'info', title: 'Delay irrigation', body: 'No need to irrigate today — rain will provide adequate moisture.' },
-      ]
-    }
-    if (condition.includes('Sunny') || condition.includes('Hot')) {
-      return [
-        { icon: '☀️', type: 'success', title: 'Great harvesting day', body: 'Perfect conditions for harvesting and drying produce. Plan your market run.' },
-        { icon: '💧', type: 'warning', title: 'Irrigation needed', body: 'Hot and dry conditions — ensure all crops are well irrigated, especially tomatoes.' },
-        { icon: '🐄', type: 'info', title: 'Check livestock water', body: 'Ensure all livestock have access to clean, cool water throughout the day.' },
-      ]
-    }
-    return [
-      { icon: '🌿', type: 'success', title: 'Good farming conditions', body: 'Moderate weather — good day for planting, spraying, and general farm maintenance.' },
-      { icon: '📅', type: 'info', title: 'Plan ahead', body: 'Check the 7-day forecast to plan your irrigation and harvesting schedule.' },
-    ]
-  }
-
-  const advisoryColors = {
-    warning: { bg: '#fff8e1', border: '#ffca28', text: '#f57f17' },
-    info:    { bg: '#e1f5fe', border: '#29b6f6', text: '#0277bd' },
-    success: { bg: '#f1f8f1', border: '#a5d6a7', text: '#2e7d32' },
-  }
-
-  return (
-    <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div>
-          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px' }}>Weather</h2>
-          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '2px' }}>
-            Live conditions and farming advisory
-          </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Availability</label>
+              <select value={form.available} onChange={e => setForm(f => ({ ...f, available: e.target.value === 'true' }))} style={inputStyle}>
+                <option value="true">Available</option>
+                <option value="false">Unavailable</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+            <button onClick={handleSubmit} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Vet</button>
+            <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+          </div>
         </div>
-        <select
-          value={county}
-          onChange={e => setCounty(e.target.value)}
-          style={{ padding: '10px 14px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none', cursor: 'pointer' }}
-        >
-          {counties.map(c => <option key={c} value={c}>📍 {c}</option>)}
+      )}
+
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍  Search by name, speciality or location..." style={{ ...inputStyle, flex: 1, minWidth: '200px', padding: '12px 16px' }} />
+        <select value={county} onChange={e => setCounty(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: '160px' }}>
+          {counties.map(c => <option key={c} value={c}>{c === 'all' ? 'All Counties' : c}</option>)}
         </select>
       </div>
 
-      {/* Loading state */}
-      {loading && (
-        <div style={{ textAlign: 'center', padding: '80px', color: '#9e9e9e' }}>
-          <div style={{ fontSize: '40px', marginBottom: '12px' }}>🌤️</div>
-          <div style={{ fontSize: '14px' }}>Loading weather for {county}...</div>
-        </div>
-      )}
-
-      {/* Error state */}
-      {error && (
-        <div style={{ background: '#ffebee', border: '1px solid #ffcdd2', borderRadius: '12px', padding: '16px', color: '#c62828', marginBottom: '16px' }}>
-          ⚠️ {error}
-        </div>
-      )}
-
-      {/* Weather content */}
-      {!loading && weather && (
-        <>
-          {/* Current weather banner */}
-          <div style={{
-            background: 'linear-gradient(135deg, #1565c0, #1976d2, #42a5f5)',
-            borderRadius: '16px', padding: '24px', color: 'white',
-            marginBottom: '20px', position: 'relative', overflow: 'hidden'
-          }}>
-            <div style={{ position: 'absolute', right: '-20px', bottom: '-20px', fontSize: '120px', opacity: 0.08, lineHeight: 1 }}>
-              {weather.icon}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div style={{ fontSize: '13px', opacity: 0.75, marginBottom: '6px' }}>
-                  📍 {weather.county}, Kenya
-                </div>
-                <div style={{ fontSize: '64px', fontWeight: '300', lineHeight: 1, fontFamily: 'DM Serif Display, serif' }}>
-                  {weather.temp}°C
-                </div>
-                <div style={{ fontSize: '18px', marginTop: '6px', opacity: 0.9 }}>
-                  {weather.icon} {weather.condition}
-                </div>
-                <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '13px', opacity: 0.75 }}>
-                  <span>💧 {weather.humidity}%</span>
-                  <span>💨 {weather.wind} km/h</span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '14px' }}>
+        {filtered.length === 0 ? (
+          <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', border: '1px solid #eeeeee', gridColumn: '1 / -1' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🏥</div>
+            <div style={{ fontSize: '15px', color: '#9e9e9e' }}>No vets found for that search</div>
+          </div>
+        ) : filtered.map(vet => (
+          <div key={vet.id} style={{ background: 'white', borderRadius: '14px', padding: '18px', border: '1px solid #eeeeee', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🩺</div>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#212121' }}>{vet.name}</div>
+                  <div style={{ fontSize: '12px', color: '#9e9e9e', marginTop: '2px' }}>{vet.speciality}</div>
                 </div>
               </div>
-              <div style={{ fontSize: '80px', lineHeight: 1 }}>{weather.icon}</div>
+              <span style={{ fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '99px', background: vet.available ? '#e8f5e9' : '#ffebee', color: vet.available ? '#2e7d32' : '#ef5350' }}>
+                {vet.available ? 'Available' : 'Unavailable'}
+              </span>
             </div>
-
-            {/* 7 day forecast */}
-            <div style={{ display: 'flex', gap: '6px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
-              {weather.forecast.map(f => (
-                <div key={f.day} style={{ flex: 1, textAlign: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px 4px' }}>
-                  <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '4px' }}>{f.day}</div>
-                  <div style={{ fontSize: '18px', marginBottom: '4px' }}>{f.icon}</div>
-                  <div style={{ fontSize: '12px', fontWeight: '700' }}>{f.high}°</div>
-                  <div style={{ fontSize: '10px', opacity: 0.6 }}>{f.low}°</div>
-                  <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '2px' }}>{f.rain}</div>
-                </div>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
+              <div style={{ fontSize: '13px', color: '#616161' }}>📍 {vet.location}, {vet.county}</div>
+              <div style={{ fontSize: '13px', color: '#616161' }}>📞 {vet.phone}</div>
             </div>
+            {vet.submitted && <span style={{ fontSize: '10px', background: '#f9fbe7', color: '#827717', padding: '2px 8px', borderRadius: '99px', fontWeight: '700' }}>Community Added</span>}
+            <a href={`tel:${vet.phone.replace(/\s/g, '')}`} style={{ display: 'block', marginTop: '12px', padding: '9px', background: vet.available ? '#2e7d32' : '#e0e0e0', color: 'white', borderRadius: '8px', textAlign: 'center', textDecoration: 'none', fontSize: '13px', fontWeight: '600', fontFamily: 'Outfit, sans-serif', cursor: vet.available ? 'pointer' : 'not-allowed' }}>
+              {vet.available ? '📞 Call Now' : '📞 Try Anyway'}
+            </a>
           </div>
-
-          {/* Farming Advisory */}
-          <div style={{ marginBottom: '6px' }}>
-            <div style={{ fontSize: '15px', fontWeight: '600', color: '#212121', marginBottom: '12px' }}>
-              🌱 Farming Advisory
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-  {weather.advisory.map((a, i) => {
-  const colors = advisoryColors[a.type]
-  return (
-    <div
-      key={i}
-      onClick={() => {
-        if (a.title.toLowerCase().includes('plan ahead') || a.title.toLowerCase().includes('forecast')) {
-          window.scrollTo({ top: 0, behavior: 'smooth' })
-        }
-      }}
-      style={{
-        background: colors.bg,
-        border: `1px solid ${colors.border}`,
-        borderRadius: '10px',
-        padding: '14px 16px',
-        cursor: a.title.toLowerCase().includes('plan') ? 'pointer' : 'default',
-        transition: 'transform 0.15s',
-      }}
-      onMouseEnter={e => {
-        if (a.title.toLowerCase().includes('plan')) {
-          e.currentTarget.style.transform = 'translateY(-2px)'
-        }
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = 'translateY(0)'
-      }}
-    >
-      <div style={{ fontSize: '13px', fontWeight: '700', color: colors.text }}>
-        {a.icon} {a.title}
+        ))}
       </div>
-      <div style={{ fontSize: '12px', color: colors.text, opacity: 0.85, marginTop: '4px', lineHeight: 1.6 }}>
-        {a.body}
-      </div>
-      {a.title.toLowerCase().includes('plan') && (
-        <div style={{ fontSize: '11px', fontWeight: '700', color: colors.text, marginTop: '6px', opacity: 0.7 }}>
-          ↑ Click to view forecast
-        </div>
-      )}
-    </div>
-  )
-})}            
-            </div>
-          </div>
-        </>
-      )}
     </div>
   )
 }
-function MarketPrices() {
-  const [region, setRegion] = useState('Nairobi')
+
+// ─────────────────────────────────────────────────────────
+//  GOVT GRANTS
+// ─────────────────────────────────────────────────────────
+function GovtGrants() {
+  const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
-  const [sortBy, setSortBy] = useState('default')
-  const [filterTrend, setFilterTrend] = useState('all')
-  const [loading, setLoading] = useState(false)
-  const [lastUpdated, setLastUpdated] = useState(
-    new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  )
 
-  const allPrices = {
-    Nairobi: [
-      { id:1, commodity:'Maize', price:3800, unit:'90kg bag', trend:'up', change:'+3%', market:'Wakulima Market' },
-      { id:2, commodity:'Tomatoes', price:6200, unit:'crate', trend:'up', change:'+12%', market:'Wakulima Market' },
-      { id:3, commodity:'Kales (Sukuma)', price:35, unit:'kg', trend:'down', change:'-5%', market:'Githurai Market' },
-      { id:4, commodity:'Beans (Rosecoco)', price:9500, unit:'90kg bag', trend:'stable', change:'0%', market:'Wakulima Market' },
-      { id:5, commodity:'Potatoes (Irish)', price:3200, unit:'90kg bag', trend:'up', change:'+7%', market:'Wakulima Market' },
-      { id:6, commodity:'Avocado (Hass)', price:25, unit:'fruit', trend:'up', change:'+15%', market:'Limuru Road' },
-      { id:7, commodity:'Eggs', price:14, unit:'egg', trend:'up', change:'+1%', market:'Nairobi Wholesale' },
-      { id:8, commodity:'Milk', price:55, unit:'litre', trend:'stable', change:'0%', market:'Brookside' },
-      { id:9, commodity:'Cabbage', price:42, unit:'head', trend:'down', change:'-8%', market:'Githurai Market' },
-      { id:10, commodity:'Onions', price:85, unit:'kg', trend:'up', change:'+6%', market:'Wakulima Market' },
-    ],
-    Nakuru: [
-      { id:11, commodity:'Maize', price:3200, unit:'90kg bag', trend:'up', change:'+5%', market:'Nakuru Town Market' },
-      { id:12, commodity:'Tomatoes', price:5500, unit:'crate', trend:'down', change:'-3%', market:'Nakuru Town Market' },
-      { id:13, commodity:'Beans', price:7800, unit:'90kg bag', trend:'up', change:'+8%', market:'Nakuru Town Market' },
-      { id:14, commodity:'Kales', price:28, unit:'kg', trend:'up', change:'+2%', market:'Nakuru Town Market' },
-      { id:15, commodity:'Milk', price:52, unit:'litre', trend:'stable', change:'0%', market:'Brookside Nakuru' },
-      { id:16, commodity:'Potatoes', price:2800, unit:'90kg bag', trend:'up', change:'+4%', market:'Nakuru Town Market' },
-      { id:17, commodity:'Carrots', price:45, unit:'kg', trend:'up', change:'+10%', market:'Nakuru Town Market' },
-      { id:18, commodity:'Eggs', price:13, unit:'egg', trend:'stable', change:'0%', market:'Nakuru Wholesale' },
-    ],
-    Mombasa: [
-      { id:19, commodity:'Maize', price:4100, unit:'90kg bag', trend:'up', change:'+2%', market:'Kongowea Market' },
-      { id:20, commodity:'Tomatoes', price:7000, unit:'crate', trend:'up', change:'+10%', market:'Kongowea Market' },
-      { id:21, commodity:'Onions', price:90, unit:'kg', trend:'down', change:'-8%', market:'Kongowea Market' },
-      { id:22, commodity:'Cassava', price:45, unit:'kg', trend:'stable', change:'0%', market:'Kongowea Market' },
-      { id:23, commodity:'Coconut', price:30, unit:'piece', trend:'up', change:'+5%', market:'Mombasa Wholesale' },
-      { id:24, commodity:'Fish (Tilapia)', price:380, unit:'kg', trend:'up', change:'+8%', market:'Kongowea Market' },
-      { id:25, commodity:'Mangoes', price:15, unit:'piece', trend:'down', change:'-10%', market:'Kongowea Market' },
-    ],
-    Kisumu: [
-      { id:26, commodity:'Maize', price:3500, unit:'90kg bag', trend:'up', change:'+4%', market:'Kibuye Market' },
-      { id:27, commodity:'Fish (Omena)', price:220, unit:'kg', trend:'stable', change:'0%', market:'Dunga Beach' },
-      { id:28, commodity:'Fish (Tilapia)', price:350, unit:'kg', trend:'up', change:'+6%', market:'Kibuye Market' },
-      { id:29, commodity:'Beans', price:8000, unit:'90kg bag', trend:'up', change:'+5%', market:'Kibuye Market' },
-      { id:30, commodity:'Tomatoes', price:5800, unit:'crate', trend:'up', change:'+7%', market:'Kibuye Market' },
-      { id:31, commodity:'Sugar Cane', price:50, unit:'piece', trend:'stable', change:'0%', market:'Kisumu Wholesale' },
-    ],
-    Eldoret: [
-      { id:32, commodity:'Maize', price:3000, unit:'90kg bag', trend:'up', change:'+6%', market:'Eldoret Town Market' },
-      { id:33, commodity:'Wheat', price:4200, unit:'90kg bag', trend:'up', change:'+9%', market:'Eldoret Town Market' },
-      { id:34, commodity:'Milk', price:48, unit:'litre', trend:'stable', change:'0%', market:'KCC Eldoret' },
-      { id:35, commodity:'Beans', price:7500, unit:'90kg bag', trend:'stable', change:'0%', market:'Eldoret Town Market' },
-      { id:36, commodity:'Potatoes', price:2600, unit:'90kg bag', trend:'up', change:'+3%', market:'Eldoret Town Market' },
-      { id:37, commodity:'Eggs', price:13, unit:'egg', trend:'up', change:'+2%', market:'Eldoret Wholesale' },
-    ],
-  }
+  const grants = [
+    { id: 1, title: 'AFC Agricultural Loan', org: 'Agricultural Finance Corporation', category: 'loan', amount: 'Up to KSh 5,000,000', deadline: 'Rolling', desc: 'Low-interest loans for farmers to buy inputs, equipment, land development and agri-business expansion.', link: 'https://www.afc.co.ke', eligibility: 'Registered farmers, cooperatives, agribusinesses', status: 'open' },
+    { id: 2, title: 'KALRO Research Grants', org: 'Kenya Agricultural & Livestock Research Org', category: 'grant', amount: 'Varies', deadline: 'Annual', desc: 'Research partnerships and technology transfer grants for innovative farming solutions.', link: 'https://www.kalro.org', eligibility: 'Research institutions, farmer groups', status: 'open' },
+    { id: 3, title: 'e-Voucher Subsidy Program', org: 'Ministry of Agriculture', category: 'subsidy', amount: 'KSh 5,000 subsidy', deadline: 'Seasonal', desc: 'Government subsidy on certified seeds, fertilisers and other farm inputs via digital vouchers.', link: 'https://www.agriculture.go.ke', eligibility: 'Smallholder farmers with at least 0.5 acres', status: 'open' },
+    { id: 4, title: 'Youth in Agribusiness Fund', org: 'Ministry of Youth Affairs', category: 'grant', amount: 'Up to KSh 500,000', deadline: 'December 2025', desc: 'Grants for young entrepreneurs starting agribusiness ventures including processing, marketing and production.', link: 'https://www.youth.go.ke', eligibility: 'Youth aged 18-35 with agribusiness plan', status: 'open' },
+    { id: 5, title: 'Women Enterprise Fund - Agri', org: 'Women Enterprise Fund', category: 'loan', amount: 'Up to KSh 500,000', deadline: 'Rolling', desc: 'Low-interest loans specifically for women farmers and agribusiness entrepreneurs.', link: 'https://www.wef.co.ke', eligibility: 'Women farmers and agribusiness owners', status: 'open' },
+    { id: 6, title: 'USAID Kenya Crops & Dairy', org: 'USAID / Kenya Market Systems', category: 'grant', amount: 'Varies by project', deadline: 'Rolling', desc: 'Technical assistance and grants for improving crop production, dairy value chains and market linkages.', link: 'https://www.usaid.gov/kenya', eligibility: 'Cooperatives, farmer groups, agribusinesses', status: 'open' },
+    { id: 7, title: 'Greenhouse Horticulture Grant', org: 'Horticultural Crops Directorate', category: 'subsidy', amount: '50% subsidy on greenhouse', deadline: 'March 2026', desc: 'Subsidised greenhouses for horticultural farmers to boost year-round vegetable production.', link: 'https://www.hcd.go.ke', eligibility: 'Registered horticultural farmers', status: 'open' },
+    { id: 8, title: 'Livestock Insurance Subsidy', org: 'APA Insurance / State Dept Livestock', category: 'subsidy', amount: '50% premium subsidy', deadline: 'Rolling', desc: 'Government-subsidised insurance for cattle, goats, sheep and camels against drought and disease.', link: 'https://www.kilimo.go.ke', eligibility: 'Livestock farmers in ASAL areas', status: 'open' },
+    { id: 9, title: 'IFC Agri-Finance Program', org: 'International Finance Corporation', category: 'loan', amount: 'USD 10,000 - 500,000', deadline: 'Rolling', desc: 'Blended finance and loans for agribusinesses looking to scale operations and access international markets.', link: 'https://www.ifc.org', eligibility: 'Established agribusinesses with 2+ years trading', status: 'open' },
+    { id: 10, title: 'Drip Irrigation Subsidy', org: 'National Irrigation Authority', category: 'subsidy', amount: '40% subsidy on drip kits', deadline: 'June 2026', desc: 'Subsidised drip irrigation kits for smallholder farmers to improve water efficiency and crop yields.', link: 'https://www.irrigation.go.ke', eligibility: 'Smallholder farmers, irrigated agriculture', status: 'open' },
+  ]
 
-  const regions = Object.keys(allPrices)
+  const categories = [
+    { id: 'all', label: 'All', icon: '📋' },
+    { id: 'grant', label: 'Grants', icon: '🎁' },
+    { id: 'loan', label: 'Loans', icon: '💰' },
+    { id: 'subsidy', label: 'Subsidies', icon: '🏷️' },
+  ]
 
-  // ── FILTERING + SEARCHING + SORTING in action ──────
-  let prices = allPrices[region] || []
+  const catColor = { grant: { bg: '#e8f5e9', color: '#2e7d32' }, loan: { bg: '#e3f2fd', color: '#0277bd' }, subsidy: { bg: '#fff8e1', color: '#f57f17' } }
 
-  // Search filter
-  if (search) {
-    prices = prices.filter(p =>
-      p.commodity.toLowerCase().includes(search.toLowerCase())
-    )
-  }
-
-  // Trend filter
-  if (filterTrend !== 'all') {
-    prices = prices.filter(p => p.trend === filterTrend)
-  }
-
-  // Sort
-  if (sortBy === 'price-high') prices = [...prices].sort((a, b) => b.price - a.price)
-  if (sortBy === 'price-low') prices = [...prices].sort((a, b) => a.price - b.price)
-  if (sortBy === 'name') prices = [...prices].sort((a, b) => a.commodity.localeCompare(b.commodity))
-
-  // Best opportunity — highest upward trend
-  const bestOpportunity = (allPrices[region] || [])
-    .filter(p => p.trend === 'up')
-    .sort((a, b) => parseFloat(b.change) - parseFloat(a.change))[0]
-
-  function refresh() {
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      setLastUpdated(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
-    }, 800)
-  }
-
-  const trendIcon = { up: '📈', down: '📉', stable: '➡️' }
-  const trendColor = { up: '#2e7d32', down: '#ef5350', stable: '#0277bd' }
-  const trendBg = { up: '#f1f8f1', down: '#ffebee', stable: '#e1f5fe' }
+  const filtered = grants.filter(g => {
+    const matchCat    = filter === 'all' || g.category === filter
+    const matchSearch = g.title.toLowerCase().includes(search.toLowerCase()) ||
+                        g.org.toLowerCase().includes(search.toLowerCase()) ||
+                        g.desc.toLowerCase().includes(search.toLowerCase())
+    return matchCat && matchSearch
+  })
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div>
-          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px' }}>Market Prices</h2>
-          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '2px' }}>
-            Live commodity prices from major Kenyan markets
-          </p>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>Govt Grants & Programs</h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>Available funding for Kenyan farmers</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#9e9e9e' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4caf50', animation: 'pulse 2s ease infinite' }}/>
-            Updated {lastUpdated}
-          </div>
-          <button
-            onClick={refresh}
-            style={{ background: 'white', color: '#2e7d32', border: '1.5px solid #2e7d32', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
-          >
-            {loading ? '🔄 Loading...' : '🔄 Refresh'}
+      </div>
+
+      <div style={{ background: '#e8f5e9', border: '1px solid #c8e6c9', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{ fontSize: '20px' }}>💡</span>
+        <div style={{ fontSize: '13px', color: '#2e7d32' }}>Always verify program status directly with the organisation before applying. Ask Shamba Bot for help with applications!</div>
+      </div>
+
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍  Search grants, loans and subsidies..." style={{ ...inputStyle, fontSize: '14px', padding: '12px 16px', marginBottom: '16px' }} />
+
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        {categories.map(cat => (
+          <button key={cat.id} onClick={() => setFilter(cat.id)} style={{ padding: '7px 14px', borderRadius: '99px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: 'none', fontFamily: 'Outfit, sans-serif', background: filter === cat.id ? '#2e7d32' : '#f5f5f5', color: filter === cat.id ? 'white' : '#616161' }}>
+            {cat.icon} {cat.label}
           </button>
-        </div>
+        ))}
       </div>
 
-      {/* Best opportunity banner */}
-      {bestOpportunity && (
-        <div style={{ background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', borderRadius: '12px', padding: '14px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px', color: 'white' }}>
-          <span style={{ fontSize: '24px' }}>🤖</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '13px', fontWeight: '700' }}>Shamba Bot Market Insight</div>
-            <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '3px', lineHeight: 1.5 }}>
-              Best opportunity in {region} today: <strong>{bestOpportunity.commodity}</strong> at <strong>KSh {bestOpportunity.price.toLocaleString()}</strong> per {bestOpportunity.unit} ({bestOpportunity.change} this week). Consider selling now if you have stock.
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '14px' }}>
+        {filtered.length === 0 ? (
+          <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', border: '1px solid #eeeeee', gridColumn: '1 / -1' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>📋</div>
+            <div style={{ fontSize: '15px', color: '#9e9e9e' }}>No programs found for that search</div>
+          </div>
+        ) : filtered.map(grant => (
+          <div key={grant.id} style={{ background: 'white', borderRadius: '14px', padding: '20px', border: '1px solid #eeeeee', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '15px', fontWeight: '700', color: '#212121', marginBottom: '4px' }}>{grant.title}</div>
+                <div style={{ fontSize: '12px', color: '#9e9e9e' }}>{grant.org}</div>
+              </div>
+              <span style={{ fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '99px', background: catColor[grant.category]?.bg, color: catColor[grant.category]?.color, whiteSpace: 'nowrap' }}>
+                {grant.category.charAt(0).toUpperCase() + grant.category.slice(1)}
+              </span>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Controls */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        {/* Region selector */}
-        <select
-          value={region}
-          onChange={e => { setRegion(e.target.value); setSearch('') }}
-          style={{ padding: '10px 14px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none', cursor: 'pointer', background: 'white' }}
-        >
-          {regions.map(r => <option key={r} value={r}>📍 {r}</option>)}
-        </select>
+            <div style={{ fontSize: '13px', color: '#616161', lineHeight: 1.6 }}>{grant.desc}</div>
 
-        {/* Search */}
-        <div style={{ flex: 1, position: 'relative', minWidth: '180px' }}>
-          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9e9e9e', fontSize: '14px' }}>🔍</span>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search commodity..."
-            style={{ width: '100%', padding: '10px 12px 10px 34px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none' }}
-          />
-        </div>
-
-        {/* Trend filter */}
-        <select
-          value={filterTrend}
-          onChange={e => setFilterTrend(e.target.value)}
-          style={{ padding: '10px 14px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none', cursor: 'pointer', background: 'white' }}
-        >
-          <option value="all">All trends</option>
-          <option value="up">📈 Rising only</option>
-          <option value="down">📉 Falling only</option>
-          <option value="stable">➡️ Stable only</option>
-        </select>
-
-        {/* Sort */}
-        <select
-          value={sortBy}
-          onChange={e => setSortBy(e.target.value)}
-          style={{ padding: '10px 14px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none', cursor: 'pointer', background: 'white' }}
-        >
-          <option value="default">Default order</option>
-          <option value="price-high">Price: High → Low</option>
-          <option value="price-low">Price: Low → High</option>
-          <option value="name">Name: A → Z</option>
-        </select>
-      </div>
-
-      {/* Results count */}
-      <div style={{ fontSize: '12px', color: '#9e9e9e', marginBottom: '10px', fontWeight: '600' }}>
-        Showing {prices.length} commodit{prices.length === 1 ? 'y' : 'ies'} in {region}
-        {search && ` matching "${search}"`}
-        {filterTrend !== 'all' && ` · ${filterTrend} trend only`}
-      </div>
-
-      {/* Prices table */}
-      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #eeeeee', overflow: 'hidden', marginBottom: '20px' }}>
-        {/* Table header */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1.5fr', padding: '10px 16px', borderBottom: '1px solid #eeeeee', background: '#f9fafb' }}>
-          {['Commodity', 'Market', 'Price', 'Trend', 'Change'].map(h => (
-            <div key={h} style={{ fontSize: '11px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
-          ))}
-        </div>
-
-        {/* Price rows */}
-        {prices.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px', color: '#9e9e9e' }}>
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔍</div>
-            <div style={{ fontSize: '14px' }}>No commodities found</div>
-            <div style={{ fontSize: '12px', marginTop: '4px' }}>Try a different search or region</div>
-          </div>
-        ) : (
-          prices.map((p, index) => (
-            <div
-              key={p.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1.5fr',
-                padding: '14px 16px',
-                borderBottom: index < prices.length - 1 ? '1px solid #f5f5f5' : 'none',
-                transition: 'background 0.1s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#212121' }}>{p.commodity}</div>
-              <div style={{ fontSize: '12px', color: '#9e9e9e', alignSelf: 'center' }}>{p.market}</div>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: '700', color: '#212121' }}>
-                  KSh {p.price.toLocaleString()}
-                </div>
-                <div style={{ fontSize: '10px', color: '#9e9e9e' }}>per {p.unit}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '10px' }}>
+                <div style={{ fontSize: '10px', color: '#9e9e9e', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Amount</div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#2e7d32', marginTop: '3px' }}>{grant.amount}</div>
               </div>
-              <div style={{ alignSelf: 'center' }}>
-                <span style={{ fontSize: '16px' }}>{trendIcon[p.trend]}</span>
-              </div>
-              <div style={{ alignSelf: 'center' }}>
-                <span style={{
-                  background: trendBg[p.trend],
-                  color: trendColor[p.trend],
-                  fontSize: '12px', fontWeight: '700',
-                  padding: '4px 10px', borderRadius: '99px'
-                }}>
-                  {p.change}
-                </span>
+              <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '10px' }}>
+                <div style={{ fontSize: '10px', color: '#9e9e9e', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Deadline</div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#212121', marginTop: '3px' }}>{grant.deadline}</div>
               </div>
             </div>
-          ))
-        )}
-      </div>
 
-      {/* Compare across regions */}
-      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #eeeeee', padding: '20px' }}>
-        <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '14px' }}>
-          🗺️ Maize Price Comparison — All Regions
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {regions.map(r => {
-            const maize = (allPrices[r] || []).find(p => p.commodity.toLowerCase().includes('maize'))
-            if (!maize) return null
-            const maxPrice = 4200
-            const pct = Math.round((maize.price / maxPrice) * 100)
-            return (
-              <div key={r} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '70px', fontSize: '13px', fontWeight: '600', color: '#424242' }}>{r}</div>
-                <div style={{ flex: 1, height: '8px', background: '#f5f5f5', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: r === region ? '#2e7d32' : '#a5d6a7', borderRadius: '4px', transition: 'width 0.5s ease' }} />
-                </div>
-                <div style={{ width: '80px', fontSize: '13px', fontWeight: '700', color: r === region ? '#2e7d32' : '#424242', textAlign: 'right' }}>
-                  KSh {maize.price.toLocaleString()}
-                </div>
-                {r === region && (
-                  <span style={{ fontSize: '10px', background: '#f1f8f1', color: '#2e7d32', padding: '2px 8px', borderRadius: '99px', fontWeight: '700' }}>Current</span>
-                )}
-              </div>
-            )
-          })}
-        </div>
-        <div style={{ fontSize: '11px', color: '#9e9e9e', marginTop: '12px' }}>
-          💡 Tip: Maize prices are highest in Mombasa due to transport costs. Sell there if logistics allow.
-        </div>
-      </div>
+            <div style={{ background: '#f5f5f5', borderRadius: '8px', padding: '10px' }}>
+              <div style={{ fontSize: '10px', color: '#9e9e9e', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '3px' }}>Eligibility</div>
+              <div style={{ fontSize: '12px', color: '#616161' }}>{grant.eligibility}</div>
+            </div>
 
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+            <a href={grant.link} target="_blank" rel="noreferrer" style={{ display: 'block', padding: '10px', background: '#2e7d32', color: 'white', borderRadius: '8px', textAlign: 'center', textDecoration: 'none', fontSize: '13px', fontWeight: '600', fontFamily: 'Outfit, sans-serif' }}>
+              🔗 Apply / Learn More
+            </a>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
+// ─────────────────────────────────────────────────────────
+//  SETTINGS
+// ─────────────────────────────────────────────────────────
+function Settings({ userName, setUserName }) {
+  const [form, setForm] = useState({ name: userName, farmName: '', county: '', phone: '', language: 'english' })
+  const [saved, setSaved] = useState(false)
 
+  function handleSave() {
+    if (!form.name.trim()) return alert('Name is required')
+    setUserName(form.name)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
+  }
 
+  const counties = ['Baringo','Bomet','Bungoma','Busia','Elgeyo Marakwet','Embu','Garissa','Homa Bay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi','Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos','Makueni','Mandera','Marsabit','Meru','Migori','Mombasa','Murang\'a','Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri','Samburu','Siaya','Taita Taveta','Tana River','Tharaka Nithi','Trans Nzoia','Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot']
 
+  return (
+    <div>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>Settings</h2>
+        <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>Manage your profile and preferences</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
+
+        {/* Profile */}
+        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>👤 Your Profile</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Full Name *</label>
+              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Farm Name</label>
+              <input value={form.farmName} onChange={e => setForm(f => ({ ...f, farmName: e.target.value }))} placeholder="e.g. Morgin Farms" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>County</label>
+              <select value={form.county} onChange={e => setForm(f => ({ ...f, county: e.target.value }))} style={inputStyle}>
+                <option value="">Select county...</option>
+                {counties.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Phone Number</label>
+              <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="e.g. 0712 345 678" style={inputStyle} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Language</label>
+              <select value={form.language} onChange={e => setForm(f => ({ ...f, language: e.target.value }))} style={inputStyle}>
+                <option value="english">English</option>
+                <option value="swahili">Kiswahili (Coming Soon)</option>
+              </select>
+            </div>
+            <button onClick={handleSave} style={{ padding: '12px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+              {saved ? '✅ Saved!' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+
+        {/* Plan */}
+        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>⭐ Your Plan</div>
+          <div style={{ background: '#f9fafb', borderRadius: '12px', padding: '16px', marginBottom: '16px', border: '2px solid #e0e0e0' }}>
+            <div style={{ fontSize: '14px', fontWeight: '700', color: '#212121', marginBottom: '4px' }}>Free Plan</div>
+            <div style={{ fontSize: '12px', color: '#9e9e9e', marginBottom: '12px' }}>Current plan</div>
+            {['Dashboard & Analytics', 'Crop Tracking', 'Livestock Management', 'Sales & Expenses', 'Tasks', 'Weather', 'Market Prices'].map(f => (
+              <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', fontSize: '13px', color: '#424242' }}>
+                <span style={{ color: '#2e7d32' }}>✓</span> {f}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ background: 'linear-gradient(135deg, #f57f17, #ff8f00)', borderRadius: '12px', padding: '16px', color: 'white' }}>
+            <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '4px' }}>⭐ Pro Plan — KSh 500/mo</div>
+            <div style={{ fontSize: '12px', opacity: 0.85, marginBottom: '12px' }}>Everything in Free, plus:</div>
+            {['Unlimited Shamba Bot AI', 'Advanced Analytics', 'Export Reports (PDF/Excel)', 'Priority Support', 'Multi-Farm Management', 'SMS Alerts'].map(f => (
+              <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', fontSize: '13px' }}>
+                <span>✓</span> {f}
+              </div>
+            ))}
+            <button style={{ marginTop: '14px', width: '100%', padding: '10px', background: 'white', color: '#f57f17', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+              Upgrade via M-Pesa
+            </button>
+          </div>
+        </div>
+
+        {/* About */}
+        <div style={{ background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', borderRadius: '16px', padding: '24px', color: 'white' }}>
+          <div style={{ fontSize: '32px', marginBottom: '12px' }}>🌱</div>
+          <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: '22px', marginBottom: '8px' }}>AgriMateKE</div>
+          <div style={{ fontSize: '13px', opacity: 0.8, lineHeight: 1.6, marginBottom: '16px' }}>
+            Smart farming companion for Kenyan farmers. Built to help you track, plan, and grow your farm business.
+          </div>
+          <div style={{ fontSize: '12px', opacity: 0.6 }}>Version 2.0 · Phase 2</div>
+          <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>Built with ❤️ for Kenyan farmers</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+//  APP
+// ─────────────────────────────────────────────────────────
 function App() {
-  const [page, setPage] = useState('dashboard')
+  const [page, setPage]         = useState('dashboard')
+  const [crops, setCrops]       = useState([])
+  const [tasks, setTasks]       = useState([])
+  const [sales, setSales]       = useState([])
+  const [expenses, setExpenses] = useState([])
+  const [livestock, setLivestock] = useState([])
+  const [userName, setUserName]   = useState('Essau Morgin')
+
+  function renderPage() {
+    switch (page) {
+      case 'dashboard': return <Dashboard crops={crops} tasks={tasks} sales={sales} expenses={expenses} userName={userName} onNavigate={setPage} />
+      case 'crops':     return <Crops crops={crops} setCrops={setCrops} />
+      case 'livestock': return <Livestock livestock={livestock} setLivestock={setLivestock} />
+      case 'sales':     return <Sales sales={sales} setSales={setSales} expenses={expenses} setExpenses={setExpenses} />
+      case 'tasks':     return <Tasks tasks={tasks} setTasks={setTasks} />
+      case 'weather':   return <Weather />
+      case 'market':    return <MarketPrices />
+      case 'shamba':    return <ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} />
+      case 'vets':      return <VetDirectory />
+      case 'grants':    return <GovtGrants />
+      case 'settings':  return <Settings userName={userName} setUserName={setUserName} />
+      default:          return <ComingSoon page={page} />
+    }
+  }
+
   return (
     <div style={{ display: 'flex' }}>
-      <Sidebar activePage={page} onNavigate={setPage} />
-      <div style={{ marginLeft: '240px', flex: 1, minHeight: '100vh' }}>
+      <Sidebar activePage={page} onNavigate={setPage} userName={userName} />
+      <div style={{ marginLeft: '240px', flex: 1, minHeight: '100vh', background: '#f9fafb' }}>
         <Topbar page={page} />
         <main style={{ padding: '24px', marginTop: '58px' }}>
-          {page === 'dashboard' && <Dashboard />}
-          {page === 'crops' && <Crops />}
-          {page === 'shamba' && <ShambaBot />}
-          {page === 'sales' && <Sales />}
-          {page === 'tasks' && <Tasks />}
-          {page === 'livestock' && <Livestock />} 
-          {page === 'weather' && <Weather />}
-          {page === 'market' && <MarketPrices />}
-          {page !== 'dashboard' && page !== 'crops' && page !== 'shamba' && (
-            <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', color: '#9e9e9e', border: '1px solid #eeeeee' }}>
-              <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚧</div>
-              <div style={{ fontSize: '16px', fontWeight: '600', color: '#424242' }}>Coming Soon</div>
-              <div style={{ fontSize: '13px', marginTop: '6px' }}>We are building this module. Check back soon!</div>
-            </div>
-          )}
+          {renderPage()}
         </main>
       </div>
     </div>
