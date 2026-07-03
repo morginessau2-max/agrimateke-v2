@@ -1263,7 +1263,7 @@ RULES:
       if (!reply) throw new Error('Empty response')
       setMessages(prev => [...prev, { role: 'bot', text: reply }])
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'bot', text: `⚠️ Shamba Bot is temporarily unavailable. Error: ${err.message}\n\nPlease check your internet connection and try again.` }])
+      setMessages(prev => [...prev, { role: 'bot', text: `⚠️ Debug: ${err.message}` }])
     } finally {
       setTyping(false)
     }
@@ -1672,7 +1672,7 @@ function App() {
   const [sales, setSales]       = useState([])
   const [expenses, setExpenses] = useState([])
   const [livestock, setLivestock] = useState([])
-  const [userName, setUserName]   = useState('Essau Morgin')
+  const [userName, setUserName]   = useState('Farmer')
 
   function renderPage() {
     switch (page) {
