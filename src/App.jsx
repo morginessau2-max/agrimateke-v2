@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from './context/AuthContext'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import { useCrops } from './hooks/useCrops'
+import { useTasks } from './hooks/useTasks'
+import { useSales } from './hooks/useSales'
+import { useLivestock } from './hooks/useLivestock'
 
 
 // ─────────────────────────────────────────────────────────
@@ -159,7 +163,7 @@ function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate }) {
   const activeCrops   = crops.filter(c => c.stage !== 'harvested').length
   const readyCrops    = crops.filter(c => c.stage === 'ready').length
   const pendingTasks  = tasks.filter(t => !t.done).length
-  const overdueTasks  = tasks.filter(t => !t.done && t.due && t.due < now).length
+  const overdueTasks  = tasks.filter(t => !t.done && t.due_date && t.due_date < now).length
   const totalRevenue  = sales.reduce((sum, s) => sum + s.total, 0)
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
   const netProfit     = totalRevenue - totalExpenses
@@ -187,7 +191,7 @@ function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate }) {
               {overdueTasks} overdue task{overdueTasks > 1 ? 's' : ''} need attention
             </div>
             <div style={{ fontSize: '12px', color: '#f57f17', marginTop: '2px' }}>
-              {tasks.filter(t => !t.done && t.due && t.due < now).map(t => t.title).join(' · ')}
+              {tasks.filter(t => !t.done && t.due_date && t.due_date < now).map(t => t.title).join(' · ')}
             </div>
           </div>
         </div>
@@ -212,7 +216,7 @@ function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate }) {
             <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0', borderBottom: '1px solid #f5f5f5' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, background: task.priority === 'high' ? '#ef5350' : task.priority === 'medium' ? '#ffca28' : '#29b6f6' }} />
               <div style={{ flex: 1, fontSize: '13px', color: '#424242' }}>{task.title}</div>
-              {task.due && task.due < now && (
+              {task.due_date && task.due_date < now && (
                 <span style={{ fontSize: '10px', background: '#ffebee', color: '#c62828', padding: '2px 6px', borderRadius: '99px', fontWeight: '700' }}>Overdue</span>
               )}
             </div>
@@ -259,7 +263,7 @@ function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate }) {
 // ─────────────────────────────────────────────────────────
 //  CROPS
 // ─────────────────────────────────────────────────────────
-function Crops({ crops, setCrops }) {
+function Crops({ crops, addCrop, updateCropStage, deleteCrop }) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', variety: '', acres: '', planted: '', harvest: '', stage: 'seedling', notes: '' })
   const stages = ['seedling', 'growing', 'flowering', 'ready', 'harvested']
@@ -270,14 +274,15 @@ function Crops({ crops, setCrops }) {
     ready:     { bg: '#fff8e1', color: '#f57f17' },
     harvested: { bg: '#eeeeee', color: '#616161' },
   }
-
-  function handleAdd() {
+  async function handleAdd() {
     if (!form.name.trim()) return alert('Crop name is required')
-    setCrops(prev => [...prev, { ...form, id: nid(), acres: parseFloat(form.acres) || 0 }])
-    setForm({ name: '', variety: '', acres: '', planted: '', harvest: '', stage: 'seedling', notes: '' })
-    setShowForm(false)
-  }
-
+    try{
+      await addCrop(form)
+      setForm({ name: '', variety: '', acres: '', planted: '', harvest: '', stage: 'seedling', notes: '' })
+      setShowForm(false)
+    } catch (err) {
+      alert('Failed to add crop: ' + err.message)}}
+    
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -359,14 +364,14 @@ function Crops({ crops, setCrops }) {
                 <div style={{ fontSize: '11px', color: '#9e9e9e', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Update Stage</div>
                 <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                   {stages.map(s => (
-                    <button key={s} onClick={() => setCrops(prev => prev.map(c => c.id === crop.id ? { ...c, stage: s } : c))} style={{ padding: '4px 8px', borderRadius: '99px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif', border: crop.stage === s ? '2px solid #2e7d32' : '1px solid #e0e0e0', background: crop.stage === s ? '#e8f5e9' : 'white', color: crop.stage === s ? '#2e7d32' : '#9e9e9e' }}>
+                    <button key={s} onClick={() => updateCropStage(crop.id, s)} style={{ padding: '4px 8px', borderRadius: '99px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif', border: crop.stage === s ? '2px solid #2e7d32' : '1px solid #e0e0e0', background: crop.stage === s ? '#e8f5e9' : 'white', color: crop.stage === s ? '#2e7d32' : '#9e9e9e' }}>
                       {s.charAt(0).toUpperCase() + s.slice(1)}
                     </button>
                   ))}
                 </div>
               </div>
               {crop.notes && <div style={{ fontSize: '12px', color: '#757575', fontStyle: 'italic', marginBottom: '12px' }}>"{crop.notes}"</div>}
-              <button onClick={() => { if (window.confirm('Remove this crop?')) setCrops(prev => prev.filter(c => c.id !== crop.id)) }} style={{ fontSize: '12px', color: '#ef5350', background: '#ffebee', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '5px 10px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🗑 Remove</button>
+              <button onClick={() => { if (window.confirm('Remove this crop?')) deleteCrop(crop.id) }} style={{ fontSize: '12px', color: '#ef5350', background: '#ffebee', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '5px 10px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🗑 Remove</button>
             </div>
           ))}
         </div>
@@ -375,10 +380,11 @@ function Crops({ crops, setCrops }) {
   )
 }
 
+
 // ─────────────────────────────────────────────────────────
 //  LIVESTOCK
 // ─────────────────────────────────────────────────────────
-function Livestock({ livestock, setLivestock }) {
+function Livestock({ livestock, addLivestock, addRecord, deleteLivestock }) {
   const [showForm, setShowForm]         = useState(false)
   const [showRecordForm, setShowRecordForm] = useState(null)
   const [form, setForm]   = useState({ emoji: '🐄', name: '', type: 'Dairy', count: '', notes: '' })
@@ -386,22 +392,28 @@ function Livestock({ livestock, setLivestock }) {
   const types  = ['Dairy', 'Beef', 'Layers', 'Broilers', 'Goats', 'Sheep', 'Pigs', 'Other']
   const emojis = ['🐄', '🐂', '🐔', '🐓', '🐐', '🐑', '🐖', '🦆']
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!form.name.trim()) return alert('Group name is required')
-    setLivestock(prev => [...prev, { ...form, id: nid(), count: parseInt(form.count) || 0, records: [] }])
-    setForm({ emoji: '🐄', name: '', type: 'Dairy', count: '', notes: '' })
-    setShowForm(false)
-  }
-
-  function handleRecord() {
+  try {
+await addLivestock(form)
+setForm({ emoji: '🐄', name: '', type: 'Dairy', count: '', notes: '' })
+setShowForm(false)
+} catch (err) {
+  alert('Failed to add livestock: ' + err.message)}}
+    
+async function handleRecord() {
     if (!record.qty) return alert('Enter a quantity')
-    setLivestock(prev => prev.map(l => l.id !== showRecordForm ? l : { ...l, records: [{ id: nid(), ...record, qty: parseFloat(record.qty) }, ...(l.records || [])] }))
-    setRecord({ type: 'milk', qty: '', date: today() })
-    setShowRecordForm(null)
+    try {
+      await addRecord(showRecordForm, record)
+      setRecord({ type: 'milk', qty: '', date: today() })
+      setShowRecordForm(null)
+    } catch (err) {
+      alert('Failed to add record: ' + err.message)
+    }
   }
 
   function totalProd(animal, type) {
-    return (animal.records || []).filter(r => r.type === type).reduce((sum, r) => sum + r.qty, 0)
+    return (animal.livestock_records || []).filter(r => r.type === type).reduce((sum, r) => sum + r.qty, 0)
   }
 
   return (
@@ -516,10 +528,10 @@ function Livestock({ livestock, setLivestock }) {
                   </div>
                 )}
               </div>
-              {(animal.records || []).length > 0 && (
+              {(animal.livestock_records || []).length > 0 && (
                 <div style={{ marginBottom: '14px' }}>
                   <div style={{ fontSize: '11px', color: '#9e9e9e', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>Recent Records</div>
-                  {animal.records.slice(0, 3).map(r => (
+                  {animal.livestock_records.slice(0, 3).map(r => (
                     <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f5f5f5', fontSize: '12px' }}>
                       <span style={{ color: '#616161' }}>{r.type.charAt(0).toUpperCase() + r.type.slice(1)}</span>
                       <span style={{ fontWeight: '600', color: '#212121' }}>{r.qty} · {r.date}</span>
@@ -530,7 +542,7 @@ function Livestock({ livestock, setLivestock }) {
               {animal.notes && <div style={{ fontSize: '12px', color: '#757575', fontStyle: 'italic', marginBottom: '12px' }}>"{animal.notes}"</div>}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => setShowRecordForm(animal.id)} style={{ flex: 1, padding: '8px', background: '#e8f5e9', color: '#2e7d32', border: '1px solid #c8e6c9', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>📋 Record Production</button>
-                <button onClick={() => { if (window.confirm('Remove this group?')) setLivestock(prev => prev.filter(l => l.id !== animal.id)) }} style={{ padding: '8px 12px', background: '#ffebee', color: '#ef5350', border: '1px solid #ffcdd2', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🗑</button>
+                <button onClick={() => { if (window.confirm('Remove this group?')) deleteLivestock(animal.id) }} style={{ padding: '8px 12px', background: '#ffebee', color: '#ef5350', border: '1px solid #ffcdd2', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🗑</button>
               </div>
             </div>
           ))}
@@ -543,7 +555,7 @@ function Livestock({ livestock, setLivestock }) {
 // ─────────────────────────────────────────────────────────
 //  SALES & EXPENSES
 // ─────────────────────────────────────────────────────────
-function Sales({ sales, setSales, expenses, setExpenses }) {
+function Sales({ sales, setSales, expenses, setExpenses, addSale, deleteSale, addExpense, deleteExpense }) {
   const [tab, setTab] = useState('overview')
   const [showSaleForm, setShowSaleForm]       = useState(false)
   const [showExpenseForm, setShowExpenseForm] = useState(false)
@@ -554,21 +566,27 @@ function Sales({ sales, setSales, expenses, setExpenses }) {
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
   const netProfit     = totalRevenue - totalExpenses
 
-  function handleAddSale() {
+  async function handleAddSale() {
     if (!saleForm.item.trim()) return alert('Item name is required')
     if (!saleForm.total) return alert('Total amount is required')
-    setSales(prev => [{ id: nid(), item: saleForm.item, qty: parseFloat(saleForm.qty) || 0, price: parseFloat(saleForm.price) || 0, total: parseFloat(saleForm.total), buyer: saleForm.buyer, date: saleForm.date }, ...prev])
+  try{
+    await addSale(saleForm)
     setSaleForm({ item: '', qty: '', price: '', total: '', buyer: '', date: today() })
     setShowSaleForm(false)
-  }
-
-  function handleAddExpense() {
+  } catch (err) {
+    alert('Failed to add sale: ' + err.message)
+  }}
+  
+async function handleAddExpense() {
     if (!expenseForm.amount) return alert('Amount is required')
-    setExpenses(prev => [{ id: nid(), desc: expenseForm.desc || 'Expense', cat: expenseForm.cat, amount: parseFloat(expenseForm.amount), date: expenseForm.date }, ...prev])
+  try{
+    await addExpense(expenseForm)
     setExpenseForm({ desc: '', cat: 'seeds', amount: '', date: today() })
     setShowExpenseForm(false)
+  } catch (err) {
+    alert('Failed to add expense: ' + err.message)
   }
-
+}
   function tabStyle(id) {
     const active = tab === id
     return { padding: '8px 18px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', border: 'none', fontFamily: 'Outfit, sans-serif', background: active ? '#2e7d32' : 'transparent', color: active ? 'white' : '#9e9e9e' }
@@ -717,7 +735,7 @@ function Sales({ sales, setSales, expenses, setExpenses }) {
                     <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>{s.buyer || '—'}</td>
                     <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>{s.date}</td>
                     <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
-                      <button onClick={() => { if (window.confirm('Remove?')) setSales(prev => prev.filter(x => x.id !== s.id)) }} style={{ background: '#ffebee', color: '#ef5350', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer' }}>🗑</button>
+                      <button onClick={() => { if (window.confirm('Remove?')) deleteSale(s.id) }} style={{ background: '#ffebee', color: '#ef5350', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer' }}>🗑</button>
                     </td>
                   </tr>
                 ))}
@@ -748,7 +766,7 @@ function Sales({ sales, setSales, expenses, setExpenses }) {
                     <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '700', color: '#ef5350', borderBottom: '1px solid #f5f5f5' }}>{fmt(e.amount)}</td>
                     <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>{e.date}</td>
                     <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
-                      <button onClick={() => { if (window.confirm('Remove?')) setExpenses(prev => prev.filter(x => x.id !== e.id)) }} style={{ background: '#ffebee', color: '#ef5350', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer' }}>🗑</button>
+                      <button onClick={() => { if (window.confirm('Remove?')) deleteExpense(e.id) }} style={{ background: '#ffebee', color: '#ef5350', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer' }}>🗑</button>
                     </td>
                   </tr>
                 ))}
@@ -764,7 +782,7 @@ function Sales({ sales, setSales, expenses, setExpenses }) {
 // ─────────────────────────────────────────────────────────
 //  TASKS
 // ─────────────────────────────────────────────────────────
-function Tasks({ tasks, setTasks }) {
+function Tasks({ tasks, addTask, toggleTask, deleteTask }) {
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter]     = useState('all')
   const [form, setForm] = useState({ title: '', desc: '', priority: 'medium', category: 'general', due: '' })
@@ -772,32 +790,36 @@ function Tasks({ tasks, setTasks }) {
   const priorities = ['low', 'medium', 'high']
   const priorityColor = { low: { bg: '#e3f2fd', color: '#0277bd' }, medium: { bg: '#fff8e1', color: '#f57f17' }, high: { bg: '#ffebee', color: '#c62828' } }
   const categoryIcon  = { general: '📌', crops: '🌿', livestock: '🐄', financial: '💰', maintenance: '🔧', other: '📋' }
-  const now = today()
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!form.title.trim()) return alert('Task title is required')
-    setTasks(prev => [{ id: nid(), ...form, done: false, created: now }, ...prev])
-    setForm({ title: '', desc: '', priority: 'medium', category: 'general', due: '' })
-    setShowForm(false)
+    try{
+      await addTask(form)
+      setForm({ title: '', desc: '', priority: 'medium', category: 'general', due: '' })
+      setShowForm(false)
+    } catch (err) {
+      alert('Failed to add task: ' + err.message)
+    }
   }
 
-  const counts = {
-    all: tasks.length,
-    pending: tasks.filter(t => !t.done).length,
-    overdue: tasks.filter(t => !t.done && t.due && t.due < now).length,
-    today:   tasks.filter(t => t.due === now).length,
-    done:    tasks.filter(t => t.done).length,
-  }
-
+  const now  = today()
   const filtered = tasks.filter(t => {
     if (filter === 'all')     return true
     if (filter === 'pending') return !t.done
     if (filter === 'done')    return t.done
-    if (filter === 'overdue') return !t.done && t.due && t.due < now
-    if (filter === 'today')   return t.due === now
+    if (filter === 'overdue') return !t.done && t.due_date && t.due_date < now
+    if (filter === 'today')   return t.due_date === now
     return true
   })
+  const counts = { 
+    all:     tasks.length,
+    pending: tasks.filter(t => !t.done).length,
+    overdue: tasks.filter(t => !t.done && t.due_date && t.due_date < now).length,
+    today:   tasks.filter(t => t.due_date === now).length,
+    done:    tasks.filter(t => t.done).length
+  }
 
+  
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -873,11 +895,11 @@ function Tasks({ tasks, setTasks }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {filtered.map(task => {
-          const isOverdue = !task.done && task.due && task.due < now
-          const isToday   = task.due === now
+          const isOverdue = !task.done && task.due_date && task.due_date < now
+          const isToday   = task.due_date === now
           return (
             <div key={task.id} style={{ background: 'white', borderRadius: '12px', padding: '16px 18px', border: '1px solid #eeeeee', display: 'flex', alignItems: 'flex-start', gap: '14px', opacity: task.done ? 0.6 : 1, borderLeft: isOverdue ? '4px solid #ef5350' : isToday ? '4px solid #ffca28' : '4px solid transparent', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <button onClick={() => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: !t.done } : t))} style={{ width: '22px', height: '22px', borderRadius: '50%', border: task.done ? 'none' : '2px solid #e0e0e0', background: task.done ? '#2e7d32' : 'white', cursor: 'pointer', flexShrink: 0, marginTop: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: 'white', fontWeight: '700' }}>
+              <button onClick={() => toggleTask(task.id, !task.done)} style={{ width: '22px', height: '22px', borderRadius: '50%', border: task.done ? 'none' : '2px solid #e0e0e0', background: task.done ? '#2e7d32' : 'white', cursor: 'pointer', flexShrink: 0, marginTop: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: 'white', fontWeight: '700' }}>
                 {task.done ? '✓' : ''}
               </button>
               <div style={{ flex: 1 }}>
@@ -887,10 +909,10 @@ function Tasks({ tasks, setTasks }) {
                   {isOverdue && <span style={{ fontSize: '10px', background: '#ffebee', color: '#c62828', padding: '2px 8px', borderRadius: '99px', fontWeight: '700' }}>OVERDUE</span>}
                   {isToday && !task.done && <span style={{ fontSize: '10px', background: '#fff8e1', color: '#f57f17', padding: '2px 8px', borderRadius: '99px', fontWeight: '700' }}>TODAY</span>}
                 </div>
-                {task.desc && <div style={{ fontSize: '12px', color: '#9e9e9e', marginTop: '4px' }}>{task.desc}</div>}
-                {task.due && <div style={{ fontSize: '11px', color: isOverdue ? '#ef5350' : '#9e9e9e', marginTop: '4px' }}>📅 Due: {task.due}</div>}
+                {task.description && <div style={{ fontSize: '12px', color: '#9e9e9e', marginTop: '4px' }}>{task.description}</div>}
+                {task.due_date && <div style={{ fontSize: '11px', color: isOverdue ? '#ef5350' : '#9e9e9e', marginTop: '4px' }}>📅 Due: {task.due_date}</div>}
               </div>
-              <button onClick={() => { if (window.confirm('Delete task?')) setTasks(prev => prev.filter(t => t.id !== task.id)) }} style={{ background: '#ffebee', color: '#ef5350', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '5px 8px', fontSize: '12px', cursor: 'pointer', flexShrink: 0 }}>🗑</button>
+              <button onClick={() => { if (window.confirm('Delete task?')) deleteTask(task.id) }} style={{ background: '#ffebee', color: '#ef5350', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '5px 8px', fontSize: '12px', cursor: 'pointer', flexShrink: 0 }}>🗑</button>
             </div>
           )
         })}
@@ -1705,11 +1727,10 @@ function App() {
   const [authPage, setAuthPage] = useState('login')
   const [page, setPage]         = useState('dashboard')
 
-  const [crops,     setCrops]     = useState([])
-  const [tasks,     setTasks]     = useState([])
-  const [sales,     setSales]     = useState([])
-  const [expenses,  setExpenses]  = useState([])
-  const [livestock, setLivestock] = useState([])
+  const {crops,addCrop, updateCropStage, deleteCrop}    = useCrops(user?.id)
+  const {tasks, addTask, toggleTask, deleteTask}     = useTasks(user?.id)
+  const {sales, expenses, addSale, deleteSale, addExpense, deleteExpense}     = useSales(user?.id)
+  const {livestock, addLivestock, addRecord, deleteLivestock,} = useLivestock(user?.id)
 
   // Loading screen
   if (loading) {
@@ -1742,10 +1763,45 @@ function App() {
   function renderPage() {
     switch (page) {
       case 'dashboard': return <Dashboard crops={crops} tasks={tasks} sales={sales} expenses={expenses} userName={userName} onNavigate={setPage} />
-      case 'crops':     return <Crops crops={crops} setCrops={setCrops} />
-      case 'livestock': return <Livestock livestock={livestock} setLivestock={setLivestock} />
-      case 'sales':     return <Sales sales={sales} setSales={setSales} expenses={expenses} setExpenses={setExpenses} />
-      case 'tasks':     return <Tasks tasks={tasks} setTasks={setTasks} />
+      case 'crops':     return (
+        <Crops 
+        crops={crops} 
+        setCrops={(fn) => {}}
+        addCrop={addCrop}
+        updateCropStage={updateCropStage}
+        deleteCrop={deleteCrop}
+        />
+      )
+      case 'livestock': return (
+        <Livestock 
+        livestock={livestock} 
+        setLivestock={(fn) => {}}
+        addLivestock={addLivestock}
+        addRecord={addRecord}
+        deleteLivestock={deleteLivestock}
+        />
+      )
+      case 'sales':  return (
+        <Sales 
+        sales={sales} 
+        expenses={expenses}
+        setSales={(fn) => {}} 
+        setExpenses={(fn) => {}}
+        addSale={addSale}
+        deleteSale={deleteSale}
+        addExpense={addExpense}
+        deleteExpense={deleteExpense}
+        />
+      )
+      case 'tasks':  return (
+        <Tasks 
+        tasks={tasks} 
+        setTasks={(fn) => {}}
+        addTask={addTask}
+        toggleTask={toggleTask}
+        deleteTask={deleteTask}
+        />
+      )
       case 'weather':   return <Weather />
       case 'market':    return <MarketPrices />
       case 'shamba':    return <ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} />
@@ -1778,4 +1834,4 @@ function App() {
   )
 }
 
-export default App
+export default App 
