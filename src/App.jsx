@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
+import { useAuth } from './context/AuthContext'
+import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
+
 
 // ─────────────────────────────────────────────────────────
 //  HELPERS
@@ -1562,18 +1566,34 @@ function GovtGrants() {
 // ─────────────────────────────────────────────────────────
 //  SETTINGS
 // ─────────────────────────────────────────────────────────
-function Settings({ userName, setUserName }) {
-  const [form, setForm] = useState({ name: userName, farmName: '', county: '', phone: '', language: 'english' })
+function Settings({ userName, setUserName, profile, onSignOut,updateProfile }) {
+  const [form, setForm] = useState({ 
+    name: profile?.full_name || userName || '', 
+    farmName: profile?.farm_name || '', 
+    county: profile?.county || '', 
+    phone: profile?.phone || '', 
+    language: 'english' })
   const [saved, setSaved] = useState(false)
 
-  function handleSave() {
-    if (!form.name.trim()) return alert('Name is required')
+  async function handleSave() {
+  if (!form.name.trim()) return alert('Name is required')
+  try {
+    await updateProfile({
+      full_name: form.name,
+      farm_name: form.farmName,
+      county:    form.county,
+      phone:     form.phone,
+    })
     setUserName(form.name)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
+  } catch (err) {
+    alert('Failed to save: ' + err.message)
   }
-
-  const counties = ['Baringo','Bomet','Bungoma','Busia','Elgeyo Marakwet','Embu','Garissa','Homa Bay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi','Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos','Makueni','Mandera','Marsabit','Meru','Migori','Mombasa','Murang\'a','Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri','Samburu','Siaya','Taita Taveta','Tana River','Tharaka Nithi','Trans Nzoia','Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot']
+}
+    
+    
+const counties = ['Baringo','Bomet','Bungoma','Busia','Elgeyo Marakwet','Embu','Garissa','Homa Bay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi','Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos','Makueni','Mandera','Marsabit','Meru','Migori','Mombasa','Murang\'a','Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri','Samburu','Siaya','Taita Taveta','Tana River','Tharaka Nithi','Trans Nzoia','Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot']
 
   return (
     <div>
@@ -1614,8 +1634,23 @@ function Settings({ userName, setUserName }) {
                 <option value="swahili">Kiswahili (Coming Soon)</option>
               </select>
             </div>
-            <button onClick={handleSave} style={{ padding: '12px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+            <button onClick={handleSave} style={{
+              padding: '12px', background: '#2e7d32', color: 'white',
+              border: 'none', borderRadius: '8px', fontSize: '14px',
+              fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif',
+              width: '100%'
+              }}>
               {saved ? '✅ Saved!' : 'Save Changes'}
+            </button>
+
+            <button onClick={onSignOut} style={{
+              width: '100%', padding: '12px', marginTop: '8px',
+              background: '#FFEBEE', color: '#C62828',
+              border: '1px solid #FFCDD2', borderRadius: '8px',
+              fontSize: '14px', fontWeight: '600',
+              cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+            }}>
+              🚪 Sign Out
             </button>
           </div>
         </div>
@@ -1666,13 +1701,43 @@ function Settings({ userName, setUserName }) {
 //  APP
 // ─────────────────────────────────────────────────────────
 function App() {
+  const { user, profile, loading, signOut, updateProfile } = useAuth()
+  const [authPage, setAuthPage] = useState('login')
   const [page, setPage]         = useState('dashboard')
-  const [crops, setCrops]       = useState([])
-  const [tasks, setTasks]       = useState([])
-  const [sales, setSales]       = useState([])
-  const [expenses, setExpenses] = useState([])
+
+  const [crops,     setCrops]     = useState([])
+  const [tasks,     setTasks]     = useState([])
+  const [sales,     setSales]     = useState([])
+  const [expenses,  setExpenses]  = useState([])
   const [livestock, setLivestock] = useState([])
-  const [userName, setUserName]   = useState('Farmer')
+
+  // Loading screen
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1B5E20, #2E7D32)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexDirection: 'column', gap: '16px'
+      }}>
+        <div style={{ fontSize: '56px' }}>🌱</div>
+        <div style={{ fontSize: '18px', color: 'white', fontFamily: 'Outfit, sans-serif' }}>
+          Loading AgriMateKE...
+        </div>
+      </div>
+    )
+  }
+
+  // Not logged in — show auth pages
+  if (!user) {
+    if (authPage === 'login') {
+      return <LoginPage onNavigateToSignup={() => setAuthPage('signup')} />
+    }
+    return <SignupPage onNavigateToLogin={() => setAuthPage('login')} />
+  }
+// Logged in — show main app
+  const userName = profile?.full_name || user.email?.split('@')[0] || 'Farmer'
+
 
   function renderPage() {
     switch (page) {
@@ -1686,8 +1751,17 @@ function App() {
       case 'shamba':    return <ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} />
       case 'vets':      return <VetDirectory />
       case 'grants':    return <GovtGrants />
-      case 'settings':  return <Settings userName={userName} setUserName={setUserName} />
-      default:          return <ComingSoon page={page} />
+      case 'settings':  return (
+
+     <Settings
+  userName={userName}
+  setUserName={() => {}}
+  profile={profile}
+  onSignOut={async () => { await signOut() }}
+  updateProfile={updateProfile}
+/>
+);
+ default:return <ComingSoon page={page} />;
     }
   }
 
