@@ -6,6 +6,7 @@ import { useCrops } from './hooks/useCrops'
 import { useTasks } from './hooks/useTasks'
 import { useSales } from './hooks/useSales'
 import { useLivestock } from './hooks/useLivestock'
+import { supabase} from './lib/supabase'
 
 
 // ─────────────────────────────────────────────────────────
@@ -42,7 +43,7 @@ function MetricCard({ icon, label, value, sub, color }) {
 // ─────────────────────────────────────────────────────────
 //  SIDEBAR
 // ─────────────────────────────────────────────────────────
-function Sidebar({ activePage, onNavigate, userName }) {
+function Sidebar({ activePage, onNavigate, userName, profile }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard',      icon: '📊' },
     { id: 'crops',     label: 'My Crops',        icon: '🌿' },
@@ -55,6 +56,7 @@ function Sidebar({ activePage, onNavigate, userName }) {
     { id: 'vets',      label: 'Vet Directory',    icon: '🏥' },
     { id: 'grants',    label: 'Govt Grants',      icon: '📋' },
     { id: 'settings',  label: 'Settings',         icon: '⚙️' },
+    { id: 'admin',     label: 'Admin', icon: '🔐'},
   ]
   return (
     <aside style={{
@@ -68,7 +70,9 @@ function Sidebar({ activePage, onNavigate, userName }) {
         <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '3px' }}>Your Farming Companion</div>
       </div>
       <nav style={{ flex: 1, padding: '10px 8px', overflowY: 'auto' }}>
-        {navItems.map(item => (
+        {navItems
+          .filter(item => item.id !== 'admin' || profile?.is_admin)
+          .map(item => (
           <button key={item.id} onClick={() => onNavigate(item.id)} style={{
             display: 'flex', alignItems: 'center', gap: '10px',
             padding: '10px 12px', borderRadius: '8px', cursor: 'pointer',
@@ -1350,130 +1354,229 @@ RULES:
 // ─────────────────────────────────────────────────────────
 //  VET DIRECTORY
 // ─────────────────────────────────────────────────────────
-function VetDirectory() {
-  const [search, setSearch]     = useState('')
-  const [county, setCounty]     = useState('all')
-  const [showForm, setShowForm] = useState(false)
-  const [submitted, setSubmitted] = useState([])
-  const [form, setForm] = useState({ name: '', phone: '', county: '', speciality: '', location: '', available: true })
+function VetDirectory({ user, profile }) {
+  const [vets,        setVets]        = useState([])
+  const [search,      setSearch]      = useState('')
+  const [county,      setCounty]      = useState('all')
+  const [showForm,    setShowForm]    = useState(false)
+  const [loading,     setLoading]     = useState(true)
+  const [submitting,  setSubmitting]  = useState(false)
+  const [form, setForm] = useState({
+    name: '', phone: '', county: '', speciality: '',
+    location: '', kvb_number: '', available: true
+  })
 
-  const vets = [
-    { id: 1,  name: 'Dr. James Mutua',      phone: '0712 345 678', county: 'Nairobi',     speciality: 'Dairy Cattle',       location: 'Kasarani',         available: true  },
-    { id: 2,  name: 'Dr. Amina Hassan',     phone: '0723 456 789', county: 'Nakuru',      speciality: 'Poultry & Livestock', location: 'Nakuru Town',      available: true  },
-    { id: 3,  name: 'Dr. Peter Kamau',      phone: '0734 567 890', county: 'Kiambu',      speciality: 'General Livestock',  location: 'Thika',            available: false },
-    { id: 4,  name: 'Dr. Grace Wanjiku',    phone: '0745 678 901', county: 'Meru',        speciality: 'Dairy & Beef',       location: 'Meru Town',        available: true  },
-    { id: 5,  name: 'Dr. Samuel Ochieng',   phone: '0756 789 012', county: 'Kisumu',      speciality: 'Aquaculture & Livestock', location: 'Kisumu Town', available: true  },
-    { id: 6,  name: 'Dr. Faith Chebet',     phone: '0767 890 123', county: 'Uasin Gishu', speciality: 'Dairy Cattle',       location: 'Eldoret',          available: true  },
-    { id: 7,  name: 'Dr. John Mwangi',      phone: '0778 901 234', county: 'Nyeri',       speciality: 'Small Animals',      location: 'Nyeri Town',       available: false },
-    { id: 8,  name: 'Dr. Beatrice Akinyi',  phone: '0789 012 345', county: 'Siaya',       speciality: 'Poultry',            location: 'Siaya Town',       available: true  },
-    { id: 9,  name: 'Dr. Michael Kipchoge', phone: '0790 123 456', county: 'Nandi',       speciality: 'Dairy & Beef',       location: 'Kapsabet',         available: true  },
-    { id: 10, name: 'Dr. Esther Wambua',    phone: '0701 234 567', county: 'Machakos',    speciality: 'General Livestock',  location: 'Machakos Town',    available: true  },
-    { id: 11, name: 'Dr. Robert Otieno',    phone: '0712 345 670', county: 'Homa Bay',    speciality: 'Livestock & Poultry', location: 'Homa Bay Town',   available: false },
-    { id: 12, name: 'Dr. Caroline Njeri',   phone: '0723 456 781', county: 'Kirinyaga',   speciality: 'Dairy Cattle',       location: 'Kerugoya',         available: true  },
-  ]
+  useEffect(() => { fetchVets() }, [])
 
-  const allVets = [...vets, ...submitted]
-  const counties = ['all', ...new Set(allVets.map(v => v.county))].sort()
+  async function fetchVets() {
+    try {
+      const { data, error } = await supabase
+        .from('vets')
+        .select('*')
+        .eq('verified', true)
+        .order('created_at', { ascending: false })
 
-  const filtered = allVets.filter(v => {
+      if (error) throw error
+      setVets(data || [])
+    } catch (err) {
+      console.error('Error fetching vets:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSubmit() {
+    if (!form.name.trim() || !form.phone.trim() || !form.county.trim()) {
+      return alert('Name, phone and county are required')
+    }
+    setSubmitting(true)
+    try {
+      const { error } = await supabase
+        .from('vets')
+        .insert({
+          name:         form.name,
+          phone:        form.phone,
+          county:       form.county,
+          speciality:   form.speciality,
+          location:     form.location,
+          kvb_number:   form.kvb_number,
+          available:    form.available,
+          verified:     false,
+          submitted_by: user.id,
+        })
+
+      if (error) throw error
+      alert('✅ Vet submitted successfully! It will appear after admin verification.')
+      setForm({ name: '', phone: '', county: '', speciality: '', location: '', kvb_number: '', available: true })
+      setShowForm(false)
+    } catch (err) {
+      alert('Failed to submit: ' + err.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const counties = ['all', 'Baringo','Bomet','Bungoma','Busia','Elgeyo Marakwet',
+    'Embu','Garissa','Homa Bay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu',
+    'Kilifi','Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu',
+    'Machakos','Makueni','Mandera','Marsabit','Meru','Migori','Mombasa',
+    "Murang'a",'Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri',
+    'Samburu','Siaya','Taita Taveta','Tana River','Tharaka Nithi','Trans Nzoia',
+    'Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot']
+
+  const filtered = vets.filter(v => {
     const matchCounty = county === 'all' || v.county === county
     const matchSearch = v.name.toLowerCase().includes(search.toLowerCase()) ||
-                        v.speciality.toLowerCase().includes(search.toLowerCase()) ||
-                        v.location.toLowerCase().includes(search.toLowerCase())
+                        (v.speciality || '').toLowerCase().includes(search.toLowerCase()) ||
+                        (v.location   || '').toLowerCase().includes(search.toLowerCase())
     return matchCounty && matchSearch
   })
 
-  function handleSubmit() {
-    if (!form.name.trim() || !form.phone.trim() || !form.county.trim()) return alert('Name, phone and county are required')
-    setSubmitted(prev => [...prev, { ...form, id: nid(), submitted: true }])
-    setForm({ name: '', phone: '', county: '', speciality: '', location: '', available: true })
-    setShowForm(false)
-  }
-
   return (
     <div>
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div>
           <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>Vet Directory</h2>
-          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>Find veterinarians across Kenya</p>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>
+            {loading ? 'Loading...' : `${vets.length} verified veterinarian${vets.length !== 1 ? 's' : ''} across Kenya`}
+          </p>
         </div>
-        <button onClick={() => setShowForm(true)} style={{ padding: '10px 18px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🏥 Add Vet</button>
+        <button onClick={() => setShowForm(true)} style={{
+          padding: '10px 18px', background: '#2e7d32', color: 'white',
+          border: 'none', borderRadius: '8px', fontSize: '14px',
+          fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+        }}>🏥 Add Vet</button>
       </div>
 
+      {/* Info Banner */}
       <div style={{ background: '#e3f2fd', border: '1px solid #90caf9', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span style={{ fontSize: '20px' }}>💡</span>
-        <div style={{ fontSize: '13px', color: '#0277bd' }}>Know a vet not listed here? Add them to help fellow farmers in your area.</div>
+        <span style={{ fontSize: '20px' }}>✅</span>
+        <div style={{ fontSize: '13px', color: '#0277bd' }}>
+          All vets are verified by the AgriMateKE admin team. Know a vet not listed? Submit them for verification.
+        </div>
       </div>
 
+      {/* Submit Form */}
       {showForm && (
         <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #eeeeee', marginBottom: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
-          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>🏥 Add a Veterinarian</div>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>🏥 Submit a Veterinarian</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             {[
-              { label: 'Full Name *', key: 'name', placeholder: 'e.g. Dr. Jane Doe' },
-              { label: 'Phone Number *', key: 'phone', placeholder: 'e.g. 0712 345 678' },
-              { label: 'County *', key: 'county', placeholder: 'e.g. Nakuru' },
-              { label: 'Speciality', key: 'speciality', placeholder: 'e.g. Dairy Cattle' },
-              { label: 'Location / Town', key: 'location', placeholder: 'e.g. Nakuru Town' },
+              { label: 'Full Name *',       key: 'name',       placeholder: 'e.g. Dr. Jane Doe' },
+              { label: 'Phone Number *',    key: 'phone',      placeholder: 'e.g. 0712 345 678' },
+              { label: 'County *',          key: 'county',     placeholder: 'e.g. Nakuru' },
+              { label: 'Speciality',        key: 'speciality', placeholder: 'e.g. Dairy Cattle' },
+              { label: 'Location / Town',   key: 'location',   placeholder: 'e.g. Nakuru Town' },
+              { label: 'KVB Reg Number',    key: 'kvb_number', placeholder: 'e.g. KVB/2024/1234' },
             ].map(f => (
               <div key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>{f.label}</label>
-                <input value={form[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.placeholder} style={inputStyle} />
+                <input
+                  value={form[f.key]}
+                  onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                  placeholder={f.placeholder}
+                  style={inputStyle}
+                />
               </div>
             ))}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Availability</label>
-              <select value={form.available} onChange={e => setForm(f => ({ ...f, available: e.target.value === 'true' }))} style={inputStyle}>
-                <option value="true">Available</option>
-                <option value="false">Unavailable</option>
-              </select>
-            </div>
           </div>
           <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
-            <button onClick={handleSubmit} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Save Vet</button>
-            <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+            <button onClick={handleSubmit} disabled={submitting} style={{
+              padding: '10px 20px', background: submitting ? '#a5d6a7' : '#2e7d32',
+              color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px',
+              fontWeight: '600', cursor: submitting ? 'not-allowed' : 'pointer',
+              fontFamily: 'Outfit, sans-serif'
+            }}>
+              {submitting ? '⏳ Submitting...' : 'Submit for Verification'}
+            </button>
+            <button onClick={() => setShowForm(false)} style={{
+              padding: '10px 20px', background: 'transparent', color: '#616161',
+              border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px',
+              cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+            }}>Cancel</button>
           </div>
         </div>
       )}
 
+      {/* Search + Filter */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍  Search by name, speciality or location..." style={{ ...inputStyle, flex: 1, minWidth: '200px', padding: '12px 16px' }} />
-        <select value={county} onChange={e => setCounty(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: '160px' }}>
-          {counties.map(c => <option key={c} value={c}>{c === 'all' ? 'All Counties' : c}</option>)}
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="🔍  Search by name, speciality or location..."
+          style={{ ...inputStyle, flex: 1, minWidth: '200px', padding: '12px 16px' }}
+        />
+        <select
+          value={county}
+          onChange={e => setCounty(e.target.value)}
+          style={{ ...inputStyle, width: 'auto', minWidth: '160px' }}>
+          {counties.map(c => (
+            <option key={c} value={c}>{c === 'all' ? 'All Counties' : c}</option>
+          ))}
         </select>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '14px' }}>
-        {filtered.length === 0 ? (
-          <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', border: '1px solid #eeeeee', gridColumn: '1 / -1' }}>
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🏥</div>
-            <div style={{ fontSize: '15px', color: '#9e9e9e' }}>No vets found for that search</div>
+      {/* Loading */}
+      {loading && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔄</div>
+          <div style={{ fontSize: '14px', color: '#9e9e9e' }}>Loading verified vets...</div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && filtered.length === 0 && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '40px', marginBottom: '12px' }}>🏥</div>
+          <div style={{ fontSize: '15px', color: '#9e9e9e' }}>
+            {vets.length === 0 ? 'No verified vets yet — be the first to submit one!' : 'No vets found for that search'}
           </div>
-        ) : filtered.map(vet => (
-          <div key={vet.id} style={{ background: 'white', borderRadius: '14px', padding: '18px', border: '1px solid #eeeeee', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🩺</div>
-                <div>
-                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#212121' }}>{vet.name}</div>
-                  <div style={{ fontSize: '12px', color: '#9e9e9e', marginTop: '2px' }}>{vet.speciality}</div>
+        </div>
+      )}
+
+      {/* Vet Cards */}
+      {!loading && filtered.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '14px' }}>
+          {filtered.map(vet => (
+            <div key={vet.id} style={{ background: 'white', borderRadius: '14px', padding: '18px', border: '1px solid #eeeeee', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🩺</div>
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: '700', color: '#212121' }}>{vet.name}</div>
+                    <div style={{ fontSize: '12px', color: '#9e9e9e', marginTop: '2px' }}>{vet.speciality || 'General Veterinarian'}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '99px', background: vet.available ? '#e8f5e9' : '#ffebee', color: vet.available ? '#2e7d32' : '#ef5350' }}>
+                    {vet.available ? 'Available' : 'Unavailable'}
+                  </span>
+                  {vet.kvb_number && (
+                    <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '99px', background: '#e3f2fd', color: '#0277bd' }}>
+                      ✅ KVB Verified
+                    </span>
+                  )}
                 </div>
               </div>
-              <span style={{ fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '99px', background: vet.available ? '#e8f5e9' : '#ffebee', color: vet.available ? '#2e7d32' : '#ef5350' }}>
-                {vet.available ? 'Available' : 'Unavailable'}
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
+                <div style={{ fontSize: '13px', color: '#616161' }}>📍 {vet.location ? `${vet.location}, ` : ''}{vet.county}</div>
+                <div style={{ fontSize: '13px', color: '#616161' }}>📞 {vet.phone}</div>
+                {vet.kvb_number && <div style={{ fontSize: '12px', color: '#9e9e9e' }}>KVB: {vet.kvb_number}</div>}
+              </div>
+              <a href={`tel:${vet.phone.replace(/\s/g, '')}`} style={{
+                display: 'block', marginTop: '12px', padding: '9px',
+                background: vet.available ? '#2e7d32' : '#e0e0e0',
+                color: 'white', borderRadius: '8px', textAlign: 'center',
+                textDecoration: 'none', fontSize: '13px', fontWeight: '600',
+                fontFamily: 'Outfit, sans-serif'
+              }}>
+                {vet.available ? '📞 Call Now' : '📞 Try Anyway'}
+              </a>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
-              <div style={{ fontSize: '13px', color: '#616161' }}>📍 {vet.location}, {vet.county}</div>
-              <div style={{ fontSize: '13px', color: '#616161' }}>📞 {vet.phone}</div>
-            </div>
-            {vet.submitted && <span style={{ fontSize: '10px', background: '#f9fbe7', color: '#827717', padding: '2px 8px', borderRadius: '99px', fontWeight: '700' }}>Community Added</span>}
-            <a href={`tel:${vet.phone.replace(/\s/g, '')}`} style={{ display: 'block', marginTop: '12px', padding: '9px', background: vet.available ? '#2e7d32' : '#e0e0e0', color: 'white', borderRadius: '8px', textAlign: 'center', textDecoration: 'none', fontSize: '13px', fontWeight: '600', fontFamily: 'Outfit, sans-serif', cursor: vet.available ? 'pointer' : 'not-allowed' }}>
-              {vet.available ? '📞 Call Now' : '📞 Try Anyway'}
-            </a>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -1720,6 +1823,151 @@ const counties = ['Baringo','Bomet','Bungoma','Busia','Elgeyo Marakwet','Embu','
 }
 
 // ─────────────────────────────────────────────────────────
+//  ADMIN DASHBOARD
+// ─────────────────────────────────────────────────────────
+function AdminDashboard({ user }) {
+  const [pending,     setPending]     = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [processing,  setProcessing]  = useState(null)
+
+  useEffect(() => { fetchPending() }, [])
+
+  async function fetchPending() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    
+
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'fetch_pending',
+        token:  session.access_token
+      })
+    })
+
+    const result = await res.json()
+    
+    
+
+    if (!res.ok) throw new Error(result.error)
+    setPending(result.vets || [])
+  } catch (err) {
+    console.error('Error fetching pending vets:', err)
+  } finally {
+    setLoading(false)
+  }
+}
+
+  async function handleAction(vetId, action) {
+    setProcessing(vetId)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          vetId,
+          token: session.access_token
+        })
+      })
+
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error)
+
+      alert(`✅ Vet ${action === 'approve' ? 'approved' : 'rejected'} successfully!`)
+      setPending(prev => prev.filter(v => v.id !== vetId))
+    } catch (err) {
+      alert('Error: ' + err.message)
+    } finally {
+      setProcessing(null)
+    }
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>
+          🔐 Admin Dashboard
+        </h2>
+        <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>
+          Manage vet verification — only visible to admins
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+        <div style={{ background: 'white', borderRadius: '12px', padding: '16px 20px', border: '1px solid #eeeeee', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+          <div style={{ fontSize: '28px', marginBottom: '8px' }}>⏳</div>
+          <div style={{ fontSize: '11px', color: '#9e9e9e', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: '600' }}>Pending Verification</div>
+          <div style={{ fontSize: '24px', fontWeight: '700', color: '#f57f17', marginTop: '4px' }}>{pending.length}</div>
+        </div>
+      </div>
+
+      {/* Pending Vets */}
+      <div style={{ background: 'white', borderRadius: '16px', padding: '20px', border: '1px solid #eeeeee' }}>
+        <div style={{ fontSize: '15px', fontWeight: '600', color: '#212121', marginBottom: '16px' }}>
+          Pending Vet Submissions
+        </div>
+
+        {loading && <div style={{ textAlign: 'center', padding: '32px', color: '#9e9e9e' }}>Loading...</div>}
+
+        {!loading && pending.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '32px', color: '#9e9e9e' }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎉</div>
+            <div>No pending submissions — all caught up!</div>
+          </div>
+        )}
+
+        {!loading && pending.map(vet => (
+          <div key={vet.id} style={{
+            border: '1px solid #eeeeee', borderRadius: '12px',
+            padding: '16px', marginBottom: '12px',
+            background: '#fafafa'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <div style={{ fontSize: '15px', fontWeight: '700', color: '#212121' }}>{vet.name}</div>
+                <div style={{ fontSize: '12px', color: '#9e9e9e', marginTop: '2px' }}>{vet.speciality || 'No speciality listed'}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
+                  <div style={{ fontSize: '13px', color: '#616161' }}>📍 {vet.location ? `${vet.location}, ` : ''}{vet.county}</div>
+                  <div style={{ fontSize: '13px', color: '#616161' }}>📞 {vet.phone}</div>
+                  {vet.kvb_number && <div style={{ fontSize: '13px', color: '#0277bd' }}>🪪 KVB: {vet.kvb_number}</div>}
+                  <div style={{ fontSize: '11px', color: '#bdbdbd' }}>Submitted: {new Date(vet.created_at).toLocaleDateString()}</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => handleAction(vet.id, 'approve')}
+                  disabled={processing === vet.id}
+                  style={{
+                    padding: '8px 16px', background: '#2e7d32', color: 'white',
+                    border: 'none', borderRadius: '8px', fontSize: '13px',
+                    fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+                  }}>
+                  {processing === vet.id ? '⏳' : '✅ Approve'}
+                </button>
+                <button
+                  onClick={() => handleAction(vet.id, 'reject')}
+                  disabled={processing === vet.id}
+                  style={{
+                    padding: '8px 16px', background: '#ffebee', color: '#c62828',
+                    border: '1px solid #ffcdd2', borderRadius: '8px', fontSize: '13px',
+                    fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+                  }}>
+                  {processing === vet.id ? '⏳' : '❌ Reject'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
 //  APP
 // ─────────────────────────────────────────────────────────
 function App() {
@@ -1802,10 +2050,11 @@ function App() {
         deleteTask={deleteTask}
         />
       )
+      case 'admin':     return <AdminDashboard user={user} />
       case 'weather':   return <Weather />
       case 'market':    return <MarketPrices />
       case 'shamba':    return <ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} />
-      case 'vets':      return <VetDirectory />
+      case 'vets':      return <VetDirectory user={user} profile={profile} />
       case 'grants':    return <GovtGrants />
       case 'settings':  return (
 
@@ -1823,7 +2072,7 @@ function App() {
 
   return (
     <div style={{ display: 'flex' }}>
-      <Sidebar activePage={page} onNavigate={setPage} userName={userName} />
+      <Sidebar activePage={page} onNavigate={setPage} userName={userName} profile={profile} />
       <div style={{ marginLeft: '240px', flex: 1, minHeight: '100vh', background: '#f9fafb' }}>
         <Topbar page={page} />
         <main style={{ padding: '24px', marginTop: '58px' }}>
