@@ -21,6 +21,17 @@ function greet() {
   if (h < 17) return 'Good afternoon'
   return 'Good evening'
 }
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return isMobile
+}
+
+
 
 // ─────────────────────────────────────────────────────────
 //  METRIC CARD
@@ -44,6 +55,9 @@ function MetricCard({ icon, label, value, sub, color }) {
 //  SIDEBAR
 // ─────────────────────────────────────────────────────────
 function Sidebar({ activePage, onNavigate, userName, profile }) {
+  const [open, setOpen] = useState(false)
+  const isMobile = useIsMobile()
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard',      icon: '📊' },
     { id: 'crops',     label: 'My Crops',        icon: '🌿' },
@@ -56,24 +70,30 @@ function Sidebar({ activePage, onNavigate, userName, profile }) {
     { id: 'vets',      label: 'Vet Directory',    icon: '🏥' },
     { id: 'grants',    label: 'Govt Grants',      icon: '📋' },
     { id: 'settings',  label: 'Settings',         icon: '⚙️' },
-    { id: 'admin',     label: 'Admin', icon: '🔐'},
+    ...(profile?.is_admin ? [{ id: 'admin', label: 'Admin', icon: '🔐' }] : [])
   ]
-  return (
-    <aside style={{
-      width: '240px',
-      background: 'linear-gradient(180deg, #1b5e20 0%, #1e5c22 100%)',
-      display: 'flex', flexDirection: 'column',
-      height: '100vh', position: 'fixed', left: 0, top: 0,
-    }}>
+
+  function handleNav(id) {
+    onNavigate(id)
+    setOpen(false)
+  }
+
+  const sidebarContent = (
+    <>
+      {/* Logo */}
       <div style={{ padding: '22px 20px 14px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: '22px', color: 'white' }}>🌱 AgriMateKE</div>
-        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '3px' }}>Your Farming Companion</div>
+        <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: '22px', color: 'white' }}>
+          🌱 AgriMateKE
+        </div>
+        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '3px' }}>
+          Your Farming Companion
+        </div>
       </div>
+
+      {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 8px', overflowY: 'auto' }}>
-        {navItems
-          .filter(item => item.id !== 'admin' || profile?.is_admin)
-          .map(item => (
-          <button key={item.id} onClick={() => onNavigate(item.id)} style={{
+        {navItems.map(item => (
+          <button key={item.id} onClick={() => handleNav(item.id)} style={{
             display: 'flex', alignItems: 'center', gap: '10px',
             padding: '10px 12px', borderRadius: '8px', cursor: 'pointer',
             color: activePage === item.id ? 'white' : 'rgba(255,255,255,0.65)',
@@ -86,22 +106,122 @@ function Sidebar({ activePage, onNavigate, userName, profile }) {
           </button>
         ))}
       </nav>
+
+      {/* User */}
       <div style={{ padding: '12px 8px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px' }}>
           <div style={{
             width: '32px', height: '32px', borderRadius: '50%',
             background: '#4caf50', color: 'white',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: '700', fontSize: '14px'
+            fontWeight: '700', fontSize: '14px', flexShrink: 0
           }}>
             {userName ? userName[0].toUpperCase() : '?'}
           </div>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.9)' }}>{userName || 'Farmer'}</div>
+            <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.9)' }}>{userName}</div>
             <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>Free Plan</div>
           </div>
         </div>
       </div>
+    </>
+  )
+
+  // ── MOBILE ──────────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <>
+        {/* Mobile Top Bar */}
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+          background: 'linear-gradient(90deg, #1b5e20, #2e7d32)',
+          height: '56px', display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', padding: '0 16px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+        }}>
+          <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: '20px', color: 'white' }}>
+            🌱 AgriMateKE
+          </div>
+          <button
+            onClick={() => setOpen(!open)}
+            style={{
+              background: 'rgba(255,255,255,0.15)', border: 'none',
+              color: 'white', fontSize: '20px', cursor: 'pointer',
+              width: '40px', height: '40px', borderRadius: '8px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+            {open ? '✕' : '☰'}
+          </button>
+        </div>
+
+        {/* Mobile Drawer Overlay */}
+        {open && (
+          <div
+            onClick={() => setOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 200,
+              background: 'rgba(0,0,0,0.5)'
+            }}
+          />
+        )}
+
+        {/* Mobile Drawer */}
+        <div style={{
+          position: 'fixed', top: 0, left: 0, bottom: 0,
+          width: '280px', zIndex: 300,
+          background: 'linear-gradient(180deg, #1b5e20 0%, #1e5c22 100%)',
+          display: 'flex', flexDirection: 'column',
+          transform: open ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.3s ease',
+          boxShadow: open ? '4px 0 20px rgba(0,0,0,0.3)' : 'none'
+        }}>
+          {sidebarContent}
+        </div>
+
+        {/* Mobile Bottom Nav — quick access to main modules */}
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+          background: 'white', borderTop: '1px solid #e0e0e0',
+          display: 'flex', height: '60px',
+          boxShadow: '0 -2px 8px rgba(0,0,0,0.08)'
+        }}>
+          {[
+            { id: 'dashboard', icon: '📊', label: 'Home' },
+            { id: 'crops',     icon: '🌿', label: 'Crops' },
+            { id: 'tasks',     icon: '✅', label: 'Tasks' },
+            { id: 'sales',     icon: '💰', label: 'Sales' },
+            { id: 'shamba',    icon: '🤖', label: 'Bot' },
+          ].map(item => (
+            <button
+              key={item.id}
+              onClick={() => handleNav(item.id)}
+              style={{
+                flex: 1, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: '2px',
+                border: 'none', cursor: 'pointer',
+                background: activePage === item.id ? '#e8f5e9' : 'white',
+                borderTop: activePage === item.id ? '2px solid #2e7d32' : '2px solid transparent',
+              }}>
+              <span style={{ fontSize: '20px' }}>{item.icon}</span>
+              <span style={{ fontSize: '9px', fontWeight: '600', color: activePage === item.id ? '#2e7d32' : '#9e9e9e', fontFamily: 'Outfit, sans-serif' }}>
+                {item.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  // ── DESKTOP ──────────────────────────────────────────────
+  return (
+    <aside style={{
+      width: '240px',
+      background: 'linear-gradient(180deg, #1b5e20 0%, #1e5c22 100%)',
+      display: 'flex', flexDirection: 'column',
+      height: '100vh', position: 'fixed', left: 0, top: 0,
+    }}>
+      {sidebarContent}
     </aside>
   )
 }
@@ -109,13 +229,17 @@ function Sidebar({ activePage, onNavigate, userName, profile }) {
 // ─────────────────────────────────────────────────────────
 //  TOPBAR
 // ─────────────────────────────────────────────────────────
-function Topbar({ page }) {
+function Topbar({ page, isMobile }) {
   const titles = {
     dashboard: 'Dashboard', crops: 'My Crops', livestock: 'Livestock',
     sales: 'Sales & Expenses', tasks: 'Tasks', weather: 'Weather',
     market: 'Market Prices', shamba: 'Shamba Bot',
-    vets: 'Vet Directory', grants: 'Govt Grants', settings: 'Settings'
+    vets: 'Vet Directory', grants: 'Govt Grants',
+    settings: 'Settings', admin: 'Admin'
   }
+
+  if (isMobile) return null // Mobile uses the top bar inside Sidebar
+
   return (
     <header style={{
       background: 'white', borderBottom: '1px solid #eeeeee',
@@ -124,7 +248,9 @@ function Topbar({ page }) {
       boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
       position: 'fixed', top: 0, left: '240px', right: 0, zIndex: 10,
     }}>
-      <div style={{ fontSize: '17px', fontWeight: '600', color: '#212121' }}>{titles[page] || 'AgriMateKE'}</div>
+      <div style={{ fontSize: '17px', fontWeight: '600', color: '#212121' }}>
+        {titles[page] || 'AgriMateKE'}
+      </div>
       <button style={{
         padding: '6px 14px', background: 'linear-gradient(135deg, #f57f17, #ff8f00)',
         color: 'white', border: 'none', borderRadius: '8px',
@@ -1974,7 +2100,7 @@ function App() {
   const { user, profile, loading, signOut, updateProfile } = useAuth()
   const [authPage, setAuthPage] = useState('login')
   const [page, setPage]         = useState('dashboard')
-
+  const isMobile = useIsMobile() 
   const {crops,addCrop, updateCropStage, deleteCrop}    = useCrops(user?.id)
   const {tasks, addTask, toggleTask, deleteTask}     = useTasks(user?.id)
   const {sales, expenses, addSale, deleteSale, addExpense, deleteExpense}     = useSales(user?.id)
@@ -2070,17 +2196,24 @@ function App() {
     }
   }
 
-  return (
-    <div style={{ display: 'flex' }}>
-      <Sidebar activePage={page} onNavigate={setPage} userName={userName} profile={profile} />
-      <div style={{ marginLeft: '240px', flex: 1, minHeight: '100vh', background: '#f9fafb' }}>
-        <Topbar page={page} />
-        <main style={{ padding: '24px', marginTop: '58px' }}>
-          {renderPage()}
-        </main>
-      </div>
+ return (
+  <div style={{ display: 'flex' }}>
+    <Sidebar activePage={page} onNavigate={setPage} userName={userName} profile={profile} />
+    <div style={{
+      marginLeft: isMobile ? '0' : '240px',
+      flex: 1,
+      minHeight: '100vh',
+      background: '#f9fafb',
+      paddingBottom: isMobile ? '70px' : '0'
+    }}>
+      <Topbar page={page} isMobile={isMobile} />
+      <main style={{ padding: isMobile ? '16px' : '24px', marginTop: isMobile ? '56px' : '58px' }}>
+        {renderPage()}
+      </main>
     </div>
-  )
+  </div>
+)
+
 }
 
 export default App 
