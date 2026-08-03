@@ -109,6 +109,14 @@ async function fetchProfile(userId) {
     setProfile(null)
   }
 
+  async function resetPassword(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  })
+  if (error) throw error
+}
+
+
   async function updateProfile(updates) {
     const { data, error } = await supabase
       .from('profiles')
@@ -132,6 +140,7 @@ async function fetchProfile(userId) {
       signOut,
       updateProfile,
       fetchProfile,
+      resetPassword,
     }}>
       {children}
     </AuthContext.Provider>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from './context/AuthContext'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import LandingPage from './pages/LandingPage'
 import { useCrops } from './hooks/useCrops'
 import { useTasks } from './hooks/useTasks'
 import { useSales } from './hooks/useSales'
@@ -2098,7 +2099,7 @@ function AdminDashboard({ user }) {
 // ─────────────────────────────────────────────────────────
 function App() {
   const { user, profile, loading, signOut, updateProfile } = useAuth()
-  const [authPage, setAuthPage] = useState('login')
+  const [authPage, setAuthPage] = useState('landing')
   const [page, setPage]         = useState('dashboard')
   const isMobile = useIsMobile() 
   const {crops,addCrop, updateCropStage, deleteCrop}    = useCrops(user?.id)
@@ -2125,8 +2126,16 @@ function App() {
 
   // Not logged in — show auth pages
   if (!user) {
+    if (authPage === 'landing') {
+      return (
+        <LandingPage 
+        onGetStarted={() => setAuthPage('signup')}
+        onLogin={() => setAuthPage('login')}
+        />
+      )
+    }
     if (authPage === 'login') {
-      return <LoginPage onNavigateToSignup={() => setAuthPage('signup')} />
+      return <LoginPage onNavigateToSignup={() => setAuthPage('signup')} onNavigateToLanding={() => setAuthPage('landing')} />
     }
     return <SignupPage onNavigateToLogin={() => setAuthPage('login')} />
   }
