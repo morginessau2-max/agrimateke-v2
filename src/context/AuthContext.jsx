@@ -115,6 +115,13 @@ async function fetchProfile(userId) {
   })
   if (error) throw error
 }
+  async function resendVerification(email) {
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+  })
+  if (error) throw error
+}
 
 
   async function updateProfile(updates) {
@@ -141,6 +148,7 @@ async function fetchProfile(userId) {
       updateProfile,
       fetchProfile,
       resetPassword,
+      resendVerification,
     }}>
       {children}
     </AuthContext.Provider>

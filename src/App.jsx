@@ -3,6 +3,8 @@ import { useAuth } from './context/AuthContext'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import LandingPage from './pages/LandingPage'
+import VerifyEmailPage from './pages/VerifyEmailPage'
+import ProfileSetupPage from './pages/ProfileSetupPage'
 import { useCrops } from './hooks/useCrops'
 import { useTasks } from './hooks/useTasks'
 import { useSales } from './hooks/useSales'
@@ -2123,6 +2125,20 @@ function App() {
       </div>
     )
   }
+  // Logged in but email not verified
+if (user && !user.email_confirmed_at) {
+  return (
+    <VerifyEmailPage
+      email={user.email}
+      onSignOut={async () => { await signOut() }}
+    />
+  )
+}
+
+//Logged in, verified but profile not complete
+if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
+  return <ProfileSetupPage/>
+}
 
   // Not logged in — show auth pages
   if (!user) {
