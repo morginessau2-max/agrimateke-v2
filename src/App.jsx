@@ -5,6 +5,8 @@ import SignupPage from './pages/SignupPage'
 import LandingPage from './pages/LandingPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
 import ProfileSetupPage from './pages/ProfileSetupPage'
+import ErrorBoundary from './components/ErrorBoundary'
+import { SkeletonBox, SkeletonGrid, SkeletonList, SkeletonCard, SkeletonDashboard } from './components/Skeleton'
 import { useCrops } from './hooks/useCrops'
 import { useTasks } from './hooks/useTasks'
 import { useSales } from './hooks/useSales'
@@ -291,7 +293,8 @@ const inputStyle = {
 // ─────────────────────────────────────────────────────────
 //  DASHBOARD
 // ─────────────────────────────────────────────────────────
-function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate }) {
+function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate, loading }) {
+  
   const now = today()
   const activeCrops   = crops.filter(c => c.stage !== 'harvested').length
   const readyCrops    = crops.filter(c => c.stage === 'ready').length
@@ -300,6 +303,7 @@ function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate }) {
   const totalRevenue  = sales.reduce((sum, s) => sum + s.total, 0)
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
   const netProfit     = totalRevenue - totalExpenses
+  if (loading) return <SkeletonDashboard />
 
   return (
     <div>
@@ -396,9 +400,22 @@ function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate }) {
 // ─────────────────────────────────────────────────────────
 //  CROPS
 // ─────────────────────────────────────────────────────────
-function Crops({ crops, addCrop, updateCropStage, deleteCrop }) {
+function Crops({ crops, addCrop, updateCropStage, deleteCrop,loading }) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', variety: '', acres: '', planted: '', harvest: '', stage: 'seedling', notes: '' })
+  if (loading) return (
+  <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div>
+        <SkeletonBox width="120px" height="28px" style={{ marginBottom: '6px' }} />
+        <SkeletonBox width="180px" height="14px" />
+      </div>
+      <SkeletonBox width="110px" height="40px" radius="8px" />
+    </div>
+    <SkeletonGrid count={4} />
+  </div>
+)
+  
   const stages = ['seedling', 'growing', 'flowering', 'ready', 'harvested']
   const stageColor = {
     seedling:  { bg: '#e3f2fd', color: '#0277bd' },
@@ -517,11 +534,24 @@ function Crops({ crops, addCrop, updateCropStage, deleteCrop }) {
 // ─────────────────────────────────────────────────────────
 //  LIVESTOCK
 // ─────────────────────────────────────────────────────────
-function Livestock({ livestock, addLivestock, addRecord, deleteLivestock }) {
+function Livestock({ livestock, addLivestock, addRecord, deleteLivestock,loading }) {
   const [showForm, setShowForm]         = useState(false)
   const [showRecordForm, setShowRecordForm] = useState(null)
   const [form, setForm]   = useState({ emoji: '🐄', name: '', type: 'Dairy', count: '', notes: '' })
   const [record, setRecord] = useState({ type: 'milk', qty: '', date: today() })
+  if (loading) return (
+  <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div>
+        <SkeletonBox width="120px" height="28px" style={{ marginBottom: '6px' }} />
+        <SkeletonBox width="180px" height="14px" />
+      </div>
+      <SkeletonBox width="120px" height="40px" radius="8px" />
+    </div>
+    <SkeletonGrid count={3} />
+  </div>
+)
+
   const types  = ['Dairy', 'Beef', 'Layers', 'Broilers', 'Goats', 'Sheep', 'Pigs', 'Other']
   const emojis = ['🐄', '🐂', '🐔', '🐓', '🐐', '🐑', '🐖', '🦆']
 
@@ -688,12 +718,31 @@ async function handleRecord() {
 // ─────────────────────────────────────────────────────────
 //  SALES & EXPENSES
 // ─────────────────────────────────────────────────────────
-function Sales({ sales, setSales, expenses, setExpenses, addSale, deleteSale, addExpense, deleteExpense }) {
+function Sales({ sales, setSales, expenses, setExpenses, addSale, deleteSale, addExpense, deleteExpense, loading }) {
   const [tab, setTab] = useState('overview')
   const [showSaleForm, setShowSaleForm]       = useState(false)
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [saleForm, setSaleForm]     = useState({ item: '', qty: '', price: '', total: '', buyer: '', date: today() })
   const [expenseForm, setExpenseForm] = useState({ desc: '', cat: 'seeds', amount: '', date: today() })
+  if (loading) return (
+  <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div>
+        <SkeletonBox width="180px" height="28px" style={{ marginBottom: '6px' }} />
+        <SkeletonBox width="200px" height="14px" />
+      </div>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <SkeletonBox width="110px" height="40px" radius="8px" />
+        <SkeletonBox width="120px" height="40px" radius="8px" />
+      </div>
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+      {[1,2,3].map(i => <SkeletonCard key={i} />)}
+    </div>
+    <SkeletonList count={4} />
+  </div>
+)
+  
   const expenseCats = ['seeds', 'fertiliser', 'labour', 'equipment', 'veterinary', 'fuel', 'transport', 'other']
   const totalRevenue  = sales.reduce((sum, s) => sum + s.total, 0)
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
@@ -915,10 +964,23 @@ async function handleAddExpense() {
 // ─────────────────────────────────────────────────────────
 //  TASKS
 // ─────────────────────────────────────────────────────────
-function Tasks({ tasks, addTask, toggleTask, deleteTask }) {
+function Tasks({ tasks, addTask, toggleTask, deleteTask,loading }) {
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter]     = useState('all')
   const [form, setForm] = useState({ title: '', desc: '', priority: 'medium', category: 'general', due: '' })
+  if (loading) return (
+  <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div>
+        <SkeletonBox width="100px" height="28px" style={{ marginBottom: '6px' }} />
+        <SkeletonBox width="160px" height="14px" />
+      </div>
+      <SkeletonBox width="110px" height="40px" radius="8px" />
+    </div>
+    <SkeletonList count={5} />
+  </div>
+)
+  
   const categories = ['general', 'crops', 'livestock', 'financial', 'maintenance', 'other']
   const priorities = ['low', 'medium', 'high']
   const priorityColor = { low: { bg: '#e3f2fd', color: '#0277bd' }, medium: { bg: '#fff8e1', color: '#f57f17' }, high: { bg: '#ffebee', color: '#c62828' } }
@@ -2104,10 +2166,10 @@ function App() {
   const [authPage, setAuthPage] = useState('landing')
   const [page, setPage]         = useState('dashboard')
   const isMobile = useIsMobile() 
-  const {crops,addCrop, updateCropStage, deleteCrop}    = useCrops(user?.id)
-  const {tasks, addTask, toggleTask, deleteTask}     = useTasks(user?.id)
-  const {sales, expenses, addSale, deleteSale, addExpense, deleteExpense}     = useSales(user?.id)
-  const {livestock, addLivestock, addRecord, deleteLivestock,} = useLivestock(user?.id)
+  const {crops,addCrop, updateCropStage, deleteCrop, loading: cropsLoading}    = useCrops(user?.id)
+  const {tasks, addTask, toggleTask, deleteTask, loading: tasksLoading}     = useTasks(user?.id)
+  const {sales, expenses, addSale, deleteSale, addExpense, deleteExpense, loading: salesLoading}     = useSales(user?.id)
+  const {livestock, addLivestock, addRecord, deleteLivestock, loading: livestockLoading} = useLivestock(user?.id)
 
   // Loading screen
   if (loading) {
@@ -2160,27 +2222,34 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
 
 
   function renderPage() {
+    const wrap = (component) => (
+      <ErrorBoundary key={page}>
+        {component}
+      </ErrorBoundary>
+    )
     switch (page) {
-      case 'dashboard': return <Dashboard crops={crops} tasks={tasks} sales={sales} expenses={expenses} userName={userName} onNavigate={setPage} />
-      case 'crops':     return (
+      case 'dashboard': return wrap (<Dashboard crops={crops} tasks={tasks} sales={sales} expenses={expenses} userName={userName} onNavigate={setPage} loading={cropsLoading || tasksLoading || salesLoading } />)
+      case 'crops':     return wrap (
         <Crops 
         crops={crops} 
         setCrops={(fn) => {}}
         addCrop={addCrop}
         updateCropStage={updateCropStage}
         deleteCrop={deleteCrop}
+        loading={cropsLoading}
         />
       )
-      case 'livestock': return (
+      case 'livestock': return wrap(
         <Livestock 
         livestock={livestock} 
         setLivestock={(fn) => {}}
         addLivestock={addLivestock}
         addRecord={addRecord}
         deleteLivestock={deleteLivestock}
+        loading={livestockLoading}
         />
       )
-      case 'sales':  return (
+      case 'sales':  return wrap(
         <Sales 
         sales={sales} 
         expenses={expenses}
@@ -2190,24 +2259,26 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
         deleteSale={deleteSale}
         addExpense={addExpense}
         deleteExpense={deleteExpense}
+        loading={salesLoading}
         />
       )
-      case 'tasks':  return (
+      case 'tasks':  return wrap(
         <Tasks 
         tasks={tasks} 
         setTasks={(fn) => {}}
         addTask={addTask}
         toggleTask={toggleTask}
         deleteTask={deleteTask}
+        loading={tasksLoading}
         />
       )
-      case 'admin':     return <AdminDashboard user={user} />
-      case 'weather':   return <Weather />
-      case 'market':    return <MarketPrices />
-      case 'shamba':    return <ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} />
-      case 'vets':      return <VetDirectory user={user} profile={profile} />
-      case 'grants':    return <GovtGrants />
-      case 'settings':  return (
+      case 'admin':     return wrap (<AdminDashboard user={user} />)
+      case 'weather':   return wrap (<Weather />)
+      case 'market':    return wrap (<MarketPrices />)
+      case 'shamba':    return wrap (<ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} />)
+      case 'vets':      return wrap (<VetDirectory user={user} profile={profile} />)
+      case 'grants':    return wrap (<GovtGrants />)
+      case 'settings':  return wrap (
 
      <Settings
   userName={userName}
@@ -2217,7 +2288,7 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
   updateProfile={updateProfile}
 />
 );
- default:return <ComingSoon page={page} />;
+ default:return wrap(<ComingSoon page={page} />);
     }
   }
 
