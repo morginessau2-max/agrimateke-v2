@@ -7,6 +7,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage'
 import ProfileSetupPage from './pages/ProfileSetupPage'
 import ErrorBoundary from './components/ErrorBoundary'
 import { SkeletonBox, SkeletonGrid, SkeletonList, SkeletonCard, SkeletonDashboard } from './components/Skeleton'
+import EmptyState from './components/EmptyState'
 import { useCrops } from './hooks/useCrops'
 import { useTasks } from './hooks/useTasks'
 import { useSales } from './hooks/useSales'
@@ -316,6 +317,38 @@ function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate, loadin
         </p>
       </div>
 
+ {activeCrops === 0 && pendingTasks === 0 && totalRevenue === 0 && (
+  <div style={{
+    background: 'linear-gradient(135deg, #E8F5E9, #F1F8E9)',
+    border: '1.5px solid #A5D6A7', borderRadius: '14px',
+    padding: '20px 24px', marginBottom: '20px',
+    display: 'flex', alignItems: 'center',
+    gap: '16px', flexWrap: 'wrap'
+  }}>
+    <div style={{ fontSize: '40px' }}>👋</div>
+    <div style={{ flex: 1, minWidth: '200px' }}>
+      <div style={{ fontSize: '15px', fontWeight: '700', color: '#1B5E20', marginBottom: '4px' }}>
+        Welcome to AgriMateKE, {userName}!
+      </div>
+      <div style={{ fontSize: '13px', color: '#2E7D32', lineHeight: 1.6 }}>
+        Your farm dashboard is ready. Start by adding your crops to unlock insights and recommendations.
+      </div>
+    </div>
+    <button
+      onClick={() => onNavigate('crops')}
+      style={{
+        padding: '10px 20px', background: '#2E7D32',
+        color: 'white', border: 'none', borderRadius: '8px',
+        fontSize: '13px', fontWeight: '700',
+        cursor: 'pointer', fontFamily: 'Outfit, sans-serif',
+        whiteSpace: 'nowrap'
+      }}>
+      🌱 Add First Crop
+    </button>
+  </div>
+)}    
+
+
       {overdueTasks > 0 && (
         <div style={{
           background: '#fff8e1', border: '1px solid #ffca28',
@@ -346,9 +379,10 @@ function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate, loadin
           <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '14px' }}>Today's Tasks</div>
           {pendingTasks === 0 ? (
             <div style={{ textAlign: 'center', padding: '24px', color: '#9e9e9e' }}>
-              <div style={{ fontSize: '28px', marginBottom: '8px' }}>🎉</div>
-              <div style={{ fontSize: '13px' }}>No pending tasks</div>
-            </div>
+             <div style={{ fontSize: '28px', marginBottom: '8px' }}>🎉</div>
+             <div style={{ fontSize: '13px', fontWeight: '600', color: '#2e7d32' }}>All caught up!</div>
+             <div style={{ fontSize: '12px', marginTop: '4px' }}>No pending tasks today</div>
+          </div>
           ) : tasks.filter(t => !t.done).slice(0, 4).map(task => (
             <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0', borderBottom: '1px solid #f5f5f5' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, background: task.priority === 'high' ? '#ef5350' : task.priority === 'medium' ? '#ffca28' : '#29b6f6' }} />
@@ -444,12 +478,14 @@ function Crops({ crops, addCrop, updateCropStage, deleteCrop,loading }) {
       </div>
 
       {crops.length === 0 && !showForm && (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '64px', textAlign: 'center', border: '1px solid #eeeeee' }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🌿</div>
-          <div style={{ fontSize: '16px', fontWeight: '600', color: '#424242', marginBottom: '6px' }}>No crops added yet</div>
-          <div style={{ fontSize: '13px', color: '#9e9e9e', marginBottom: '20px' }}>Start tracking your crops to see insights on your dashboard</div>
-          <button onClick={() => setShowForm(true)} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🌱 Add First Crop</button>
-        </div>
+        <EmptyState
+          icon="🌿"
+          title="No crops added yet"
+          desc="Start tracking your crops to see insights on your dashboard.Know exactly when to plant, spray, and harvest for maximum yield."
+          action="🌱 Add First Crop"
+          onAction={() => setShowForm(true)}
+        />
+
       )}
 
       {showForm && (
@@ -590,11 +626,13 @@ async function handleRecord() {
       </div>
 
       {livestock.length === 0 && !showForm && (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '64px', textAlign: 'center', border: '1px solid #eeeeee' }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🐄</div>
-          <div style={{ fontSize: '16px', fontWeight: '600', color: '#424242', marginBottom: '6px' }}>No livestock added yet</div>
-          <button onClick={() => setShowForm(true)} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🐄 Add First Group</button>
-        </div>
+        <EmptyState
+          icon="🐄"
+          title="No livestock added yet"
+          desc="Track your animals and record daily milk,egg and weight data.See your totals grow over time and make informed decisions for your farm."
+          action="🐄 Add First Group"
+          onAction={() => setShowForm(true)}
+        />
       )}
 
       {showForm && (
@@ -869,8 +907,13 @@ async function handleAddExpense() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
           <div style={{ background: 'white', borderRadius: '14px', padding: '20px', border: '1px solid #eeeeee' }}>
             <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '14px' }}>Recent Sales</div>
-            {sales.length === 0 ? <div style={{ textAlign: 'center', padding: '24px', color: '#9e9e9e', fontSize: '13px' }}>No sales recorded yet</div>
-              : sales.slice(0, 5).map(s => (
+            {sales.length === 0 ? (<EmptyState
+              icon="💰"
+              title="No sales recorded yet"
+              desc="Record your first sale to start tracking your farm income and see your earnings grow."
+              action="💰 Record  First Sale"
+              onAction={() => setShowSaleForm(true)}
+            />) : sales.slice(0, 5).map(s => (
                 <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #f5f5f5' }}>
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: '#212121' }}>{s.item}</div>
@@ -882,8 +925,13 @@ async function handleAddExpense() {
           </div>
           <div style={{ background: 'white', borderRadius: '14px', padding: '20px', border: '1px solid #eeeeee' }}>
             <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '14px' }}>Recent Expenses</div>
-            {expenses.length === 0 ? <div style={{ textAlign: 'center', padding: '24px', color: '#9e9e9e', fontSize: '13px' }}>No expenses recorded yet</div>
-              : expenses.slice(0, 5).map(e => (
+            {expenses.length === 0 ? (<EmptyState
+              icon="📋"
+              title="No expenses recorded yet"
+              desc="Track your farm costs - seeds, fertilizers,labour and more - to know your true profit."
+              action="📋 Record First Expense"
+              onAction={() => setShowExpenseForm(true)}
+            /> ): expenses.slice(0, 5).map(e => (
                 <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #f5f5f5' }}>
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: '#212121' }}>{e.desc}</div>
@@ -1082,10 +1130,25 @@ function Tasks({ tasks, addTask, toggleTask, deleteTask,loading }) {
       </div>
 
       {filtered.length === 0 && (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '64px', textAlign: 'center', border: '1px solid #eeeeee' }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>{filter === 'done' ? '🎉' : '✅'}</div>
-          <div style={{ fontSize: '16px', fontWeight: '600', color: '#424242' }}>{filter === 'all' ? 'Add your first task' : `No ${filter} tasks`}</div>
-        </div>
+        <EmptyState
+    icon={filter === 'done' ? '🎉' : filter === 'overdue' ? '✅' : '📋'}
+    title={
+      filter === 'all'     ? 'No tasks yet' :
+      filter === 'done'    ? 'No completed tasks yet' :
+      filter === 'overdue' ? 'No overdue tasks!' :
+      filter === 'today'   ? 'Nothing due today' :
+      'No pending tasks!'
+    }
+    desc={
+      filter === 'all'     ? 'Plan your farm activities. Add tasks with due dates and priority levels to stay on top of your shamba.' :
+      filter === 'done'    ? 'Complete some tasks and they will appear here.' :
+      filter === 'overdue' ? 'Great work — you are all caught up on overdue tasks!' :
+      filter === 'today'   ? 'Nothing is due today. Enjoy your day!' :
+      'All caught up! You have no pending tasks right now. 🎉'
+    }
+    action={filter === 'all' || filter === 'pending' ? '✅ Add First Task' : null}
+    onAction={() => setShowForm(true)}
+  />
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
