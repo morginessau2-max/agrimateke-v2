@@ -295,65 +295,72 @@ const inputStyle = {
 //  DASHBOARD
 // ─────────────────────────────────────────────────────────
 function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate, loading }) {
-  
   const now = today()
+
   const activeCrops   = crops.filter(c => c.stage !== 'harvested').length
   const readyCrops    = crops.filter(c => c.stage === 'ready').length
   const pendingTasks  = tasks.filter(t => !t.done).length
   const overdueTasks  = tasks.filter(t => !t.done && t.due_date && t.due_date < now).length
-  const totalRevenue  = sales.reduce((sum, s) => sum + s.total, 0)
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+  const totalRevenue  = sales.reduce((sum, s) => sum + (s.total || 0), 0)
+  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0)
   const netProfit     = totalRevenue - totalExpenses
+
   if (loading) return <SkeletonDashboard />
 
   return (
     <div>
+      {/* Greeting */}
       <div style={{ marginBottom: '20px' }}>
         <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '26px', color: '#212121' }}>
           {greet()}, {userName} 👋
         </h2>
         <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '4px' }}>
-          {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          {new Date().toLocaleDateString('en-GB', {
+            weekday: 'long', day: 'numeric',
+            month: 'long', year: 'numeric'
+          })}
         </p>
       </div>
 
- {activeCrops === 0 && pendingTasks === 0 && totalRevenue === 0 && (
-  <div style={{
-    background: 'linear-gradient(135deg, #E8F5E9, #F1F8E9)',
-    border: '1.5px solid #A5D6A7', borderRadius: '14px',
-    padding: '20px 24px', marginBottom: '20px',
-    display: 'flex', alignItems: 'center',
-    gap: '16px', flexWrap: 'wrap'
-  }}>
-    <div style={{ fontSize: '40px' }}>👋</div>
-    <div style={{ flex: 1, minWidth: '200px' }}>
-      <div style={{ fontSize: '15px', fontWeight: '700', color: '#1B5E20', marginBottom: '4px' }}>
-        Welcome to AgriMateKE, {userName}!
-      </div>
-      <div style={{ fontSize: '13px', color: '#2E7D32', lineHeight: 1.6 }}>
-        Your farm dashboard is ready. Start by adding your crops to unlock insights and recommendations.
-      </div>
-    </div>
-    <button
-      onClick={() => onNavigate('crops')}
-      style={{
-        padding: '10px 20px', background: '#2E7D32',
-        color: 'white', border: 'none', borderRadius: '8px',
-        fontSize: '13px', fontWeight: '700',
-        cursor: 'pointer', fontFamily: 'Outfit, sans-serif',
-        whiteSpace: 'nowrap'
-      }}>
-      🌱 Add First Crop
-    </button>
-  </div>
-)}    
+      {/* First time welcome banner */}
+      {activeCrops === 0 && pendingTasks === 0 && totalRevenue === 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, #E8F5E9, #F1F8E9)',
+          border: '1.5px solid #A5D6A7', borderRadius: '14px',
+          padding: '20px 24px', marginBottom: '20px',
+          display: 'flex', alignItems: 'center',
+          gap: '16px', flexWrap: 'wrap'
+        }}>
+          <div style={{ fontSize: '40px' }}>👋</div>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: '#1B5E20', marginBottom: '4px' }}>
+              Welcome to AgriMateKE, {userName}!
+            </div>
+            <div style={{ fontSize: '13px', color: '#2E7D32', lineHeight: 1.6 }}>
+              Your farm dashboard is ready. Start by adding your crops to unlock insights and recommendations.
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigate('crops')}
+            style={{
+              padding: '10px 20px', background: '#2E7D32',
+              color: 'white', border: 'none', borderRadius: '8px',
+              fontSize: '13px', fontWeight: '700',
+              cursor: 'pointer', fontFamily: 'Outfit, sans-serif',
+              whiteSpace: 'nowrap'
+            }}>
+            🌱 Add First Crop
+          </button>
+        </div>
+      )}
 
-
+      {/* Overdue alert */}
       {overdueTasks > 0 && (
         <div style={{
           background: '#fff8e1', border: '1px solid #ffca28',
           borderRadius: '10px', padding: '12px 16px',
-          marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px'
+          marginBottom: '16px', display: 'flex',
+          alignItems: 'center', gap: '10px'
         }}>
           <span style={{ fontSize: '20px' }}>⚠️</span>
           <div>
@@ -361,75 +368,216 @@ function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate, loadin
               {overdueTasks} overdue task{overdueTasks > 1 ? 's' : ''} need attention
             </div>
             <div style={{ fontSize: '12px', color: '#f57f17', marginTop: '2px' }}>
-              {tasks.filter(t => !t.done && t.due_date && t.due_date < now).map(t => t.title).join(' · ')}
+              {tasks
+                .filter(t => !t.done && t.due_date && t.due_date < now)
+                .map(t => t.title)
+                .join(' · ')}
             </div>
           </div>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-        <MetricCard icon="💰" label="Total Revenue" value={fmt(totalRevenue)} sub={totalRevenue === 0 ? 'Record a sale to start' : 'All time'} color="#2e7d32" />
-        <MetricCard icon="📈" label="Net Profit" value={fmt(netProfit)} sub={netProfit >= 0 ? 'Profit' : 'Running at a loss'} color={netProfit >= 0 ? '#2e7d32' : '#ef5350'} />
-        <MetricCard icon="🌿" label="Active Crops" value={activeCrops} sub={readyCrops > 0 ? `${readyCrops} ready to harvest` : 'Add your first crop'} color="#0277bd" />
-        <MetricCard icon="✅" label="Pending Tasks" value={pendingTasks} sub={overdueTasks > 0 ? `${overdueTasks} overdue` : pendingTasks === 0 ? 'All done! 🎉' : 'On track'} color={overdueTasks > 0 ? '#ef5350' : '#2e7d32'} />
+      {/* Metric Cards */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '12px', marginBottom: '24px'
+      }}>
+        <MetricCard
+          icon="💰" label="Total Revenue"
+          value={fmt(totalRevenue)}
+          sub={totalRevenue === 0 ? 'Record a sale to start' : 'All time'}
+          color="#2e7d32"
+        />
+        <MetricCard
+          icon="📈" label="Net Profit"
+          value={fmt(netProfit)}
+          sub={netProfit >= 0 ? 'Profit' : 'Running at a loss'}
+          color={netProfit >= 0 ? '#2e7d32' : '#ef5350'}
+        />
+        <MetricCard
+          icon="🌿" label="Active Crops"
+          value={activeCrops}
+          sub={readyCrops > 0 ? `${readyCrops} ready to harvest` : 'Track your crops'}
+          color="#0277bd"
+        />
+        <MetricCard
+          icon="✅" label="Pending Tasks"
+          value={pendingTasks}
+          sub={overdueTasks > 0 ? `${overdueTasks} overdue` : pendingTasks === 0 ? 'All done! 🎉' : 'On track'}
+          color={overdueTasks > 0 ? '#ef5350' : '#2e7d32'}
+        />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', border: '1px solid #eeeeee' }}>
-          <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '14px' }}>Today's Tasks</div>
+      {/* Bottom Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gap: '16px'
+      }}>
+
+        {/* Today's Tasks */}
+        <div style={{
+          background: 'white', borderRadius: '16px',
+          padding: '20px', border: '1px solid #eeeeee'
+        }}>
+          <div style={{
+            fontSize: '15px', fontWeight: '600',
+            marginBottom: '14px', display: 'flex',
+            justifyContent: 'space-between', alignItems: 'center'
+          }}>
+            <span>Today's Tasks</span>
+            {pendingTasks > 0 && (
+              <span style={{
+                fontSize: '11px', background: '#e8f5e9',
+                color: '#2e7d32', padding: '2px 8px',
+                borderRadius: '99px', fontWeight: '700'
+              }}>
+                {pendingTasks} pending
+              </span>
+            )}
+          </div>
           {pendingTasks === 0 ? (
             <div style={{ textAlign: 'center', padding: '24px', color: '#9e9e9e' }}>
-             <div style={{ fontSize: '28px', marginBottom: '8px' }}>🎉</div>
-             <div style={{ fontSize: '13px', fontWeight: '600', color: '#2e7d32' }}>All caught up!</div>
-             <div style={{ fontSize: '12px', marginTop: '4px' }}>No pending tasks today</div>
-          </div>
-          ) : tasks.filter(t => !t.done).slice(0, 4).map(task => (
-            <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0', borderBottom: '1px solid #f5f5f5' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, background: task.priority === 'high' ? '#ef5350' : task.priority === 'medium' ? '#ffca28' : '#29b6f6' }} />
-              <div style={{ flex: 1, fontSize: '13px', color: '#424242' }}>{task.title}</div>
-              {task.due_date && task.due_date < now && (
-                <span style={{ fontSize: '10px', background: '#ffebee', color: '#c62828', padding: '2px 6px', borderRadius: '99px', fontWeight: '700' }}>Overdue</span>
-              )}
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>🎉</div>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#2e7d32' }}>All caught up!</div>
+              <div style={{ fontSize: '12px', marginTop: '4px' }}>No pending tasks today</div>
             </div>
-          ))}
+          ) : (
+            tasks.filter(t => !t.done).slice(0, 4).map(task => {
+              const isOverdue = task.due_date && task.due_date < now
+              return (
+                <div key={task.id} style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '9px 0', borderBottom: '1px solid #f5f5f5'
+                }}>
+                  <div style={{
+                    width: '8px', height: '8px',
+                    borderRadius: '50%', flexShrink: 0,
+                    background:
+                      task.priority === 'high'   ? '#ef5350' :
+                      task.priority === 'medium' ? '#ffca28' : '#29b6f6'
+                  }} />
+                  <div style={{ flex: 1, fontSize: '13px', color: '#424242' }}>
+                    {task.title}
+                  </div>
+                  {isOverdue && (
+                    <span style={{
+                      fontSize: '10px', background: '#ffebee',
+                      color: '#c62828', padding: '2px 6px',
+                      borderRadius: '99px', fontWeight: '700'
+                    }}>
+                      Overdue
+                    </span>
+                  )}
+                </div>
+              )
+            })
+          )}
+          {pendingTasks > 4 && (
+            <div
+              onClick={() => onNavigate('tasks')}
+              style={{
+                textAlign: 'center', fontSize: '12px',
+                color: '#2e7d32', fontWeight: '600',
+                cursor: 'pointer', marginTop: '10px'
+              }}>
+              View all {pendingTasks} tasks →
+            </div>
+          )}
         </div>
 
-        <div style={{ background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', borderRadius: '16px', padding: '20px', color: 'white' }}>
+        {/* Shamba Bot Teaser */}
+        <div style={{
+          background: 'linear-gradient(135deg, #1b5e20, #2e7d32)',
+          borderRadius: '16px', padding: '20px', color: 'white'
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
             <span style={{ fontSize: '24px' }}>🤖</span>
             <div style={{ fontSize: '15px', fontWeight: '600' }}>Shamba Bot</div>
           </div>
           <p style={{ fontSize: '13px', opacity: 0.85, lineHeight: 1.6 }}>
             {activeCrops === 0 && pendingTasks === 0
-              ? 'Welcome! Start by adding your crops and tasks.'
-              : `You have ${activeCrops} active crop${activeCrops !== 1 ? 's' : ''} and ${pendingTasks} pending task${pendingTasks !== 1 ? 's' : ''}. Ask me anything!`}
+              ? 'Welcome! Start by adding your crops and tasks. I will help you manage your farm smarter.'
+              : `You have ${activeCrops} active crop${activeCrops !== 1 ? 's' : ''} and ${pendingTasks} pending task${pendingTasks !== 1 ? 's' : ''}. Ask me anything!`
+            }
           </p>
-          <button 
-          onClick={() => onNavigate('shamba')}
-          style={{ marginTop: '12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+          <button
+            onClick={() => onNavigate('shamba')}
+            style={{
+              marginTop: '12px', background: 'rgba(255,255,255,0.15)',
+              color: 'white', border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '8px', padding: '8px 14px',
+              fontSize: '13px', fontWeight: '600',
+              cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+            }}>
             Ask Shamba Bot →
           </button>
         </div>
 
+        {/* Financial Summary */}
         {(sales.length > 0 || expenses.length > 0) && (
-          <div style={{ background: 'white', borderRadius: '16px', padding: '20px', border: '1px solid #eeeeee' }}>
-            <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '14px' }}>Financial Summary</div>
+          <div style={{
+            background: 'white', borderRadius: '16px',
+            padding: '20px', border: '1px solid #eeeeee'
+          }}>
+            <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '14px' }}>
+              Financial Summary
+            </div>
             {[
-              { label: 'Total Revenue', value: fmt(totalRevenue), color: '#2e7d32' },
+              { label: 'Total Revenue',  value: fmt(totalRevenue),  color: '#2e7d32' },
               { label: 'Total Expenses', value: fmt(totalExpenses), color: '#ef5350' },
-              { label: 'Net Profit', value: fmt(netProfit), color: netProfit >= 0 ? '#2e7d32' : '#ef5350' },
+              { label: 'Net Profit',     value: fmt(netProfit),     color: netProfit >= 0 ? '#2e7d32' : '#ef5350' },
             ].map(item => (
-              <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid #f5f5f5' }}>
+              <div key={item.label} style={{
+                display: 'flex', justifyContent: 'space-between',
+                padding: '9px 0', borderBottom: '1px solid #f5f5f5'
+              }}>
                 <div style={{ fontSize: '13px', color: '#616161' }}>{item.label}</div>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: item.color }}>{item.value}</div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: item.color }}>
+                  {item.value}
+                </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Ready to Harvest Alert */}
+        {readyCrops > 0 && (
+          <div style={{
+            background: '#fff8e1', border: '1.5px solid #ffca28',
+            borderRadius: '16px', padding: '20px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '24px' }}>🌾</span>
+              <div style={{ fontSize: '15px', fontWeight: '600', color: '#f57f17' }}>
+                Ready to Harvest!
+              </div>
+            </div>
+            <div style={{ fontSize: '13px', color: '#f57f17', lineHeight: 1.6 }}>
+              {readyCrops} crop{readyCrops !== 1 ? 's are' : ' is'} ready for harvest.
+              Check your Crops module to update their status.
+            </div>
+            <button
+              onClick={() => onNavigate('crops')}
+              style={{
+                marginTop: '12px', background: '#f57f17',
+                color: 'white', border: 'none',
+                borderRadius: '8px', padding: '8px 14px',
+                fontSize: '13px', fontWeight: '600',
+                cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+              }}>
+              View Crops →
+            </button>
           </div>
         )}
       </div>
     </div>
   )
 }
+
+
+
 
 // ─────────────────────────────────────────────────────────
 //  CROPS
@@ -2291,7 +2439,7 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
       </ErrorBoundary>
     )
     switch (page) {
-      case 'dashboard': return wrap (<Dashboard crops={crops} tasks={tasks} sales={sales} expenses={expenses} userName={userName} onNavigate={setPage} loading={cropsLoading || tasksLoading || salesLoading } />)
+      case 'dashboard': return wrap (<Dashboard crops={crops} tasks={tasks} sales={sales} expenses={expenses} userName={userName} onNavigate={setPage} loading={cropsLoading || tasksLoading || salesLoading || livestockLoading } />)
       case 'crops':     return wrap (
         <Crops 
         crops={crops} 
