@@ -8,6 +8,7 @@ import ProfileSetupPage from './pages/ProfileSetupPage'
 import ErrorBoundary from './components/ErrorBoundary'
 import { SkeletonBox, SkeletonGrid, SkeletonList, SkeletonCard, SkeletonDashboard } from './components/Skeleton'
 import EmptyState from './components/EmptyState'
+import NotFoundPage from './pages/NotFoundPage'
 import { useCrops } from './hooks/useCrops'
 import { useTasks } from './hooks/useTasks'
 import { useSales } from './hooks/useSales'
@@ -1462,45 +1463,122 @@ function Weather() {
 // ─────────────────────────────────────────────────────────
 //  MARKET PRICES
 // ─────────────────────────────────────────────────────────
-function MarketPrices() {
-  const [search, setSearch]       = useState('')
-  const [category, setCategory]   = useState('all')
-  const [showForm, setShowForm]   = useState(false)
-  const [submitted, setSubmitted] = useState([])
-  const [form, setForm] = useState({ crop: '', price: '', unit: 'kg', market: '', county: '' })
+function MarketPrices({ user }) {
+  const [search,       setSearch]       = useState('')
+  const [category,     setCategory]     = useState('all')
+  const [showForm,     setShowForm]     = useState(false)
+  const [submitted,    setSubmitted]    = useState([])
+  const [loadingPrices, setLoadingPrices] = useState(true)
+  const [submitting,   setSubmitting]   = useState(false)
+  const [form, setForm] = useState({
+    crop: '', price: '', unit: 'kg', market: '', county: ''
+  })
+
+  useEffect(() => { fetchCommunityPrices() }, [])
+
+  async function fetchCommunityPrices() {
+    try {
+      const { data, error } = await supabase
+        .from('market_prices')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) throw error
+      setSubmitted(data || [])
+    } catch (err) {
+      console.error('Error fetching community prices:', err)
+    } finally {
+      setLoadingPrices(false)
+    }
+  }
+
+  async function handleSubmit() {
+    if (!form.crop.trim() || !form.price || !form.market.trim()) {
+      return alert('Crop, price and market are required')
+    }
+    setSubmitting(true)
+    try {
+      const { data, error } = await supabase
+        .from('market_prices')
+        .insert({
+          crop_name:    form.crop,
+          category:     'other',
+          price:        parseFloat(form.price),
+          unit:         form.unit,
+          market:       form.market,
+          county:       form.county || null,
+          submitted_by: user?.id || null,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      setSubmitted(prev => [data, ...prev])
+      setForm({ crop: '', price: '', unit: 'kg', market: '', county: '' })
+      setShowForm(false)
+      alert('✅ Price submitted successfully! Thank you for helping fellow farmers.')
+    } catch (err) {
+      alert('Failed to submit: ' + err.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const basePrices = [
-    { id: 1,  name: 'Maize (Dry)',       category: 'cereals',    price: 45,   unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 5  },
-    { id: 2,  name: 'Wheat',             category: 'cereals',    price: 55,   unit: 'kg',    market: 'Eldoret Market',   county: 'Uasin Gishu', trend: 'stable', change: 0  },
-    { id: 3,  name: 'Sorghum',           category: 'cereals',    price: 38,   unit: 'kg',    market: 'Kisumu Market',    county: 'Kisumu',      trend: 'down',   change: 3  },
-    { id: 4,  name: 'Tomatoes',          category: 'vegetables', price: 80,   unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'down',   change: 20 },
-    { id: 5,  name: 'Kale (Sukuma)',     category: 'vegetables', price: 15,   unit: 'bunch', market: 'Marikiti Market',  county: 'Nairobi',     trend: 'stable', change: 0  },
-    { id: 6,  name: 'Cabbage',           category: 'vegetables', price: 40,   unit: 'head',  market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 8  },
-    { id: 7,  name: 'Onions',            category: 'vegetables', price: 90,   unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 10 },
-    { id: 8,  name: 'Capsicum',          category: 'vegetables', price: 150,  unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 20 },
-    { id: 9,  name: 'Beans (Dry)',       category: 'legumes',    price: 130,  unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 10 },
-    { id: 10, name: 'Green Grams',       category: 'legumes',    price: 120,  unit: 'kg',    market: 'Kisumu Market',    county: 'Kisumu',      trend: 'stable', change: 0  },
-    { id: 11, name: 'Avocado',           category: 'fruits',     price: 15,   unit: 'piece', market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 3  },
-    { id: 12, name: 'Mango',             category: 'fruits',     price: 10,   unit: 'piece', market: 'Marikiti Market',  county: 'Nairobi',     trend: 'down',   change: 2  },
-    { id: 13, name: 'Milk (Fresh)',      category: 'livestock',  price: 55,   unit: 'litre', market: 'Nakuru Market',    county: 'Nakuru',      trend: 'stable', change: 0  },
-    { id: 14, name: 'Eggs (Tray)',       category: 'livestock',  price: 380,  unit: 'tray',  market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 20 },
-    { id: 15, name: 'Chicken (Live)',    category: 'livestock',  price: 700,  unit: 'piece', market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 50 },
-    { id: 16, name: 'Coffee (Dry)',      category: 'cash',       price: 350,  unit: 'kg',    market: 'Thika Market',     county: 'Kiambu',      trend: 'up',     change: 30 },
-    { id: 17, name: 'Tea Leaves',        category: 'cash',       price: 22,   unit: 'kg',    market: 'Nakuru Market',    county: 'Nakuru',      trend: 'stable', change: 0  },
-    { id: 18, name: 'Sugarcane',         category: 'cash',       price: 4,    unit: 'kg',    market: 'Kisumu Market',    county: 'Kisumu',      trend: 'down',   change: 1  },
+    { id: 'b1',  name: 'Maize (Dry)',    category: 'cereals',    price: 45,   unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 5  },
+    { id: 'b2',  name: 'Wheat',          category: 'cereals',    price: 55,   unit: 'kg',    market: 'Eldoret Market',   county: 'Uasin Gishu', trend: 'stable', change: 0  },
+    { id: 'b3',  name: 'Sorghum',        category: 'cereals',    price: 38,   unit: 'kg',    market: 'Kisumu Market',    county: 'Kisumu',      trend: 'down',   change: 3  },
+    { id: 'b4',  name: 'Tomatoes',       category: 'vegetables', price: 80,   unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'down',   change: 20 },
+    { id: 'b5',  name: 'Kale (Sukuma)',  category: 'vegetables', price: 15,   unit: 'bunch', market: 'Marikiti Market',  county: 'Nairobi',     trend: 'stable', change: 0  },
+    { id: 'b6',  name: 'Cabbage',        category: 'vegetables', price: 40,   unit: 'head',  market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 8  },
+    { id: 'b7',  name: 'Onions',         category: 'vegetables', price: 90,   unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 10 },
+    { id: 'b8',  name: 'Beans (Dry)',    category: 'legumes',    price: 130,  unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 10 },
+    { id: 'b9',  name: 'Green Grams',    category: 'legumes',    price: 120,  unit: 'kg',    market: 'Kisumu Market',    county: 'Kisumu',      trend: 'stable', change: 0  },
+    { id: 'b10', name: 'Avocado',        category: 'fruits',     price: 15,   unit: 'piece', market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 3  },
+    { id: 'b11', name: 'Mango',          category: 'fruits',     price: 10,   unit: 'piece', market: 'Marikiti Market',  county: 'Nairobi',     trend: 'down',   change: 2  },
+    { id: 'b12', name: 'Milk (Fresh)',   category: 'livestock',  price: 55,   unit: 'litre', market: 'Nakuru Market',    county: 'Nakuru',      trend: 'stable', change: 0  },
+    { id: 'b13', name: 'Eggs (Tray)',    category: 'livestock',  price: 380,  unit: 'tray',  market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 20 },
+    { id: 'b14', name: 'Chicken (Live)', category: 'livestock',  price: 700,  unit: 'piece', market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 50 },
+    { id: 'b15', name: 'Coffee (Dry)',   category: 'cash',       price: 350,  unit: 'kg',    market: 'Thika Market',     county: 'Kiambu',      trend: 'up',     change: 30 },
+    { id: 'b16', name: 'Tea Leaves',     category: 'cash',       price: 22,   unit: 'kg',    market: 'Nakuru Market',    county: 'Nakuru',      trend: 'stable', change: 0  },
+    { id: 'b17', name: 'Sugarcane',      category: 'cash',       price: 4,    unit: 'kg',    market: 'Kisumu Market',    county: 'Kisumu',      trend: 'down',   change: 1  },
   ]
 
-  const allPrices = [...basePrices, ...submitted]
+  // Merge base prices with community prices
+  // Community prices show at the top
+  const communityFormatted = submitted.map(p => ({
+    id:        p.id,
+    name:      p.crop_name,
+    category:  p.category || 'other',
+    price:     p.price,
+    unit:      p.unit,
+    market:    p.market,
+    county:    p.county || '—',
+    trend:     'stable',
+    change:    0,
+    community: true,
+    created_at: p.created_at,
+  }))
+
+  const allPrices = [...communityFormatted, ...basePrices]
+
   const categories = [
-    { id: 'all', label: 'All', icon: '🛒' }, { id: 'cereals', label: 'Cereals', icon: '🌽' },
-    { id: 'vegetables', label: 'Vegetables', icon: '🥬' }, { id: 'legumes', label: 'Legumes', icon: '🫘' },
-    { id: 'fruits', label: 'Fruits', icon: '🍎' }, { id: 'livestock', label: 'Livestock', icon: '🐄' },
-    { id: 'cash', label: 'Cash Crops', icon: '☕' },
+    { id: 'all',        label: 'All',        icon: '🛒' },
+    { id: 'cereals',    label: 'Cereals',    icon: '🌽' },
+    { id: 'vegetables', label: 'Vegetables', icon: '🥬' },
+    { id: 'legumes',    label: 'Legumes',    icon: '🫘' },
+    { id: 'fruits',     label: 'Fruits',     icon: '🍎' },
+    { id: 'livestock',  label: 'Livestock',  icon: '🐄' },
+    { id: 'cash',       label: 'Cash Crops', icon: '☕' },
+    { id: 'other',      label: 'Community',  icon: '👥' },
   ]
 
   const filtered = allPrices.filter(p => {
     const matchCat    = category === 'all' || p.category === category
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.market.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+                        p.market.toLowerCase().includes(search.toLowerCase()) ||
+                        (p.county || '').toLowerCase().includes(search.toLowerCase())
     return matchCat && matchSearch
   })
 
@@ -1510,31 +1588,53 @@ function MarketPrices() {
     return { icon: '→', color: '#9e9e9e', label: 'Stable' }
   }
 
-  function handleSubmit() {
-    if (!form.crop.trim() || !form.price || !form.market.trim()) return alert('Crop, price and market are required')
-    setSubmitted(prev => [{ id: nid(), name: form.crop, category: 'other', price: parseFloat(form.price), unit: form.unit, market: form.market, county: form.county, trend: 'stable', change: 0, submitted: true }, ...prev])
-    setForm({ crop: '', price: '', unit: 'kg', market: '', county: '' })
-    setShowForm(false)
-  }
-
   return (
     <div>
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div>
-          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>Market Prices</h2>
-          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>Current produce prices across Kenyan markets</p>
+          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>
+            Market Prices
+          </h2>
+          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>
+            {loadingPrices ? 'Loading...' : `${allPrices.length} prices · ${communityFormatted.length} from community`}
+          </p>
         </div>
-        <button onClick={() => setShowForm(true)} style={{ padding: '10px 18px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>📊 Submit Price</button>
+        <button
+          onClick={() => setShowForm(true)}
+          style={{
+            padding: '10px 18px', background: '#2e7d32', color: 'white',
+            border: 'none', borderRadius: '8px', fontSize: '14px',
+            fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+          }}>
+          📊 Submit Price
+        </button>
       </div>
 
-      <div style={{ background: '#e8f5e9', border: '1px solid #c8e6c9', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+      {/* Info Banner */}
+      <div style={{
+        background: '#e8f5e9', border: '1px solid #c8e6c9',
+        borderRadius: '10px', padding: '12px 16px',
+        marginBottom: '20px', display: 'flex',
+        alignItems: 'center', gap: '10px'
+      }}>
         <span style={{ fontSize: '20px' }}>💡</span>
-        <div style={{ fontSize: '13px', color: '#2e7d32' }}>Prices are indicative. Submit a price to help fellow farmers get accurate local rates.</div>
+        <div style={{ fontSize: '13px', color: '#2e7d32' }}>
+          Baseline prices are indicative. Community prices are submitted by real farmers.
+          Submit a price to help others get accurate local rates! 🌱
+        </div>
       </div>
 
+      {/* Submit Form */}
       {showForm && (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #eeeeee', marginBottom: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
-          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>📊 Submit a Market Price</div>
+        <div style={{
+          background: 'white', borderRadius: '16px', padding: '24px',
+          border: '1px solid #eeeeee', marginBottom: '20px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.08)'
+        }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121', marginBottom: '18px' }}>
+            📊 Submit a Market Price
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Crop / Product *</label>
@@ -1547,68 +1647,171 @@ function MarketPrices() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Unit</label>
               <select value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} style={inputStyle}>
-                {['kg', 'litre', 'bunch', 'piece', 'tray', 'head'].map(u => <option key={u} value={u}>{u}</option>)}
+                {['kg', 'litre', 'bunch', 'piece', 'tray', 'head'].map(u => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
               </select>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>Market *</label>
-              <input value={form.market} onChange={e => setForm(f => ({ ...f, market: e.target.value }))} placeholder="e.g. Eldoret Market" style={inputStyle} />
+              <input value={form.market} onChange={e => setForm(f => ({ ...f, market: e.target.value }))} placeholder="e.g. Wakulima Market" style={inputStyle} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161' }}>County</label>
-              <input value={form.county} onChange={e => setForm(f => ({ ...f, county: e.target.value }))} placeholder="e.g. Uasin Gishu" style={inputStyle} />
+              <input value={form.county} onChange={e => setForm(f => ({ ...f, county: e.target.value }))} placeholder="e.g. Nairobi" style={inputStyle} />
             </div>
           </div>
           <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
-            <button onClick={handleSubmit} style={{ padding: '10px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Submit Price</button>
-            <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              style={{
+                padding: '10px 20px',
+                background: submitting ? '#a5d6a7' : '#2e7d32',
+                color: 'white', border: 'none', borderRadius: '8px',
+                fontSize: '14px', fontWeight: '600',
+                cursor: submitting ? 'not-allowed' : 'pointer',
+                fontFamily: 'Outfit, sans-serif'
+              }}>
+              {submitting ? '⏳ Submitting...' : 'Submit Price'}
+            </button>
+            <button
+              onClick={() => setShowForm(false)}
+              style={{
+                padding: '10px 20px', background: 'transparent',
+                color: '#616161', border: '1px solid #e0e0e0',
+                borderRadius: '8px', fontSize: '14px',
+                cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+              }}>
+              Cancel
+            </button>
           </div>
         </div>
       )}
 
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍  Search crop, market or county..." style={{ ...inputStyle, fontSize: '14px', padding: '12px 16px', marginBottom: '16px' }} />
+      {/* Search */}
+      <input
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder="🔍  Search crop, market or county..."
+        style={{ ...inputStyle, fontSize: '14px', padding: '12px 16px', marginBottom: '16px' }}
+      />
 
+      {/* Category Filter */}
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '20px' }}>
         {categories.map(cat => (
-          <button key={cat.id} onClick={() => setCategory(cat.id)} style={{ padding: '7px 14px', borderRadius: '99px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: 'none', fontFamily: 'Outfit, sans-serif', background: category === cat.id ? '#2e7d32' : '#f5f5f5', color: category === cat.id ? 'white' : '#616161' }}>
+          <button
+            key={cat.id}
+            onClick={() => setCategory(cat.id)}
+            style={{
+              padding: '7px 14px', borderRadius: '99px',
+              fontSize: '13px', fontWeight: '600',
+              cursor: 'pointer', border: 'none',
+              fontFamily: 'Outfit, sans-serif',
+              background: category === cat.id ? '#2e7d32' : '#f5f5f5',
+              color:      category === cat.id ? 'white'   : '#616161',
+            }}>
             {cat.icon} {cat.label}
+            {cat.id === 'other' && communityFormatted.length > 0 && (
+              <span style={{
+                marginLeft: '4px', background: 'rgba(255,255,255,0.3)',
+                borderRadius: '99px', padding: '1px 6px',
+                fontSize: '10px'
+              }}>
+                {communityFormatted.length}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
-      <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #eeeeee', overflow: 'hidden' }}>
-        {filtered.length === 0 ? <div style={{ textAlign: 'center', padding: '48px', color: '#9e9e9e', fontSize: '13px' }}>No prices found</div> : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#fafafa' }}>
-                {['Crop / Product', 'Price', 'Unit', 'Market', 'County', 'Trend'].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#9e9e9e', textTransform: 'uppercase', borderBottom: '1px solid #eeeeee' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(p => {
-                const t = trendIcon(p.trend, p.change)
-                return (
-                  <tr key={p.id} style={{ background: p.submitted ? '#f9fbe7' : 'white' }}>
-                    <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '600', color: '#212121', borderBottom: '1px solid #f5f5f5' }}>
-                      {p.name}{p.submitted && <span style={{ fontSize: '10px', background: '#f9fbe7', color: '#827717', padding: '1px 6px', borderRadius: '99px', marginLeft: '6px', fontWeight: '700' }}>Community</span>}
-                    </td>
-                    <td style={{ padding: '12px 14px', fontSize: '14px', fontWeight: '700', color: '#2e7d32', borderBottom: '1px solid #f5f5f5' }}>KSh {p.price.toLocaleString()}</td>
-                    <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>per {p.unit}</td>
-                    <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>{p.market}</td>
-                    <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}><span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '99px', background: '#f3e5f5', color: '#7b1fa2' }}>{p.county}</span></td>
-                    <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '700', color: t.color, borderBottom: '1px solid #f5f5f5' }}>{t.icon} {t.label}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
+      {/* Loading */}
+      {loadingPrices && (
+        <div style={{ background: 'white', borderRadius: '14px', padding: '32px', textAlign: 'center', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '24px', marginBottom: '8px' }}>🔄</div>
+          <div style={{ fontSize: '13px', color: '#9e9e9e' }}>Loading market prices...</div>
+        </div>
+      )}
+
+      {/* Price Table */}
+      {!loadingPrices && (
+        <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #eeeeee', overflow: 'hidden' }}>
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '48px', color: '#9e9e9e', fontSize: '13px' }}>
+              No prices found for that search
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#fafafa' }}>
+                  {['Crop / Product', 'Price', 'Unit', 'Market', 'County', 'Trend'].map(h => (
+                    <th key={h} style={{
+                      padding: '10px 14px', textAlign: 'left',
+                      fontSize: '11px', fontWeight: '700',
+                      color: '#9e9e9e', textTransform: 'uppercase',
+                      letterSpacing: '0.05em', borderBottom: '1px solid #eeeeee'
+                    }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(p => {
+                  const t = trendIcon(p.trend, p.change)
+                  return (
+                    <tr key={p.id} style={{ background: p.community ? '#f9fbe7' : 'white' }}>
+                      <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '600', color: '#212121', borderBottom: '1px solid #f5f5f5' }}>
+                        {p.name}
+                        {p.community && (
+                          <span style={{
+                            fontSize: '10px', background: '#f9fbe7',
+                            color: '#827717', padding: '1px 6px',
+                            borderRadius: '99px', marginLeft: '6px',
+                            fontWeight: '700'
+                          }}>
+                            👥 Community
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: '14px', fontWeight: '700', color: '#2e7d32', borderBottom: '1px solid #f5f5f5' }}>
+                        KSh {Number(p.price).toLocaleString()}
+                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>
+                        per {p.unit}
+                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>
+                        {p.market}
+                      </td>
+                      <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
+                        <span style={{
+                          fontSize: '11px', fontWeight: '700',
+                          padding: '2px 8px', borderRadius: '99px',
+                          background: '#f3e5f5', color: '#7b1fa2'
+                        }}>
+                          {p.county}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '700', color: t.color, borderBottom: '1px solid #f5f5f5' }}>
+                        {t.icon} {t.label}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      <div style={{ fontSize: '11px', color: '#bdbdbd', textAlign: 'center', marginTop: '16px' }}>
+        Baseline prices last updated: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+        · Community prices submitted by farmers in real time
       </div>
     </div>
   )
 }
+
 
 // ─────────────────────────────────────────────────────────
 //  SHAMBA BOT
@@ -2485,7 +2688,7 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
       )
       case 'admin':     return wrap (<AdminDashboard user={user} />)
       case 'weather':   return wrap (<Weather />)
-      case 'market':    return wrap (<MarketPrices />)
+      case 'market':    return wrap (<MarketPrices user={user}/>)
       case 'shamba':    return wrap (<ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} />)
       case 'vets':      return wrap (<VetDirectory user={user} profile={profile} />)
       case 'grants':    return wrap (<GovtGrants />)
@@ -2499,7 +2702,7 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
   updateProfile={updateProfile}
 />
 );
- default:return wrap(<ComingSoon page={page} />);
+ default:return wrap(<NotFoundPage onGoHome={() => setPage('dashboard')} />);
     }
   }
 
