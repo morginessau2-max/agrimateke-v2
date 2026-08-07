@@ -6,6 +6,7 @@ import LandingPage from './pages/LandingPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
 import ProfileSetupPage from './pages/ProfileSetupPage'
 import ErrorBoundary from './components/ErrorBoundary'
+import { useToast } from './components/Toast'
 import { SkeletonBox, SkeletonGrid, SkeletonList, SkeletonCard, SkeletonDashboard } from './components/Skeleton'
 import EmptyState from './components/EmptyState'
 import NotFoundPage from './pages/NotFoundPage'
@@ -236,7 +237,7 @@ function Sidebar({ activePage, onNavigate, userName, profile }) {
 // ─────────────────────────────────────────────────────────
 //  TOPBAR
 // ─────────────────────────────────────────────────────────
-function Topbar({ page, isMobile }) {
+function Topbar({ page, isMobile, onNavigate }) {
   const titles = {
     dashboard: 'Dashboard', crops: 'My Crops', livestock: 'Livestock',
     sales: 'Sales & Expenses', tasks: 'Tasks', weather: 'Weather',
@@ -258,11 +259,15 @@ function Topbar({ page, isMobile }) {
       <div style={{ fontSize: '17px', fontWeight: '600', color: '#212121' }}>
         {titles[page] || 'AgriMateKE'}
       </div>
-      <button style={{
-        padding: '6px 14px', background: 'linear-gradient(135deg, #f57f17, #ff8f00)',
-        color: 'white', border: 'none', borderRadius: '8px',
-        fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
-      }}>⭐ Go Pro</button>
+      <button
+        onClick={() => onNavigate('settings')}
+        style={{
+          padding: '6px 14px', background: 'linear-gradient(135deg, #f57f17, #ff8f00)',
+          color: 'white', border: 'none', borderRadius: '8px',
+          fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+        }}>
+        ⭐ Go Pro
+      </button>
     </header>
   )
 }
@@ -583,7 +588,7 @@ function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate, loadin
 // ─────────────────────────────────────────────────────────
 //  CROPS
 // ─────────────────────────────────────────────────────────
-function Crops({ crops, addCrop, updateCropStage, deleteCrop,loading }) {
+function Crops({ crops, addCrop, updateCropStage, deleteCrop,loading, showToast }) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', variety: '', acres: '', planted: '', harvest: '', stage: 'seedling', notes: '' })
   if (loading) return (
@@ -613,8 +618,9 @@ function Crops({ crops, addCrop, updateCropStage, deleteCrop,loading }) {
       await addCrop(form)
       setForm({ name: '', variety: '', acres: '', planted: '', harvest: '', stage: 'seedling', notes: '' })
       setShowForm(false)
+      showToast('Crop added successfully! 🌿')
     } catch (err) {
-      alert('Failed to add crop: ' + err.message)}}
+      showToast('Failed to add crop: ' + err.message, 'error')}}
     
   return (
     <div>
@@ -706,7 +712,13 @@ function Crops({ crops, addCrop, updateCropStage, deleteCrop,loading }) {
                 </div>
               </div>
               {crop.notes && <div style={{ fontSize: '12px', color: '#757575', fontStyle: 'italic', marginBottom: '12px' }}>"{crop.notes}"</div>}
-              <button onClick={() => { if (window.confirm('Remove this crop?')) deleteCrop(crop.id) }} style={{ fontSize: '12px', color: '#ef5350', background: '#ffebee', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '5px 10px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🗑 Remove</button>
+              <button 
+              onClick={() => { 
+                if (window.confirm('Remove this crop?')) {
+                deleteCrop(crop.id)
+                showToast('Crop removed', 'info') }
+              }} 
+              style={{ fontSize: '12px', color: '#ef5350', background: '#ffebee', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '5px 10px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🗑 Remove</button>
             </div>
           ))}
         </div>
@@ -719,7 +731,7 @@ function Crops({ crops, addCrop, updateCropStage, deleteCrop,loading }) {
 // ─────────────────────────────────────────────────────────
 //  LIVESTOCK
 // ─────────────────────────────────────────────────────────
-function Livestock({ livestock, addLivestock, addRecord, deleteLivestock,loading }) {
+function Livestock({ livestock, addLivestock, addRecord, deleteLivestock,loading, showToast }) {
   const [showForm, setShowForm]         = useState(false)
   const [showRecordForm, setShowRecordForm] = useState(null)
   const [form, setForm]   = useState({ emoji: '🐄', name: '', type: 'Dairy', count: '', notes: '' })
@@ -746,8 +758,10 @@ function Livestock({ livestock, addLivestock, addRecord, deleteLivestock,loading
 await addLivestock(form)
 setForm({ emoji: '🐄', name: '', type: 'Dairy', count: '', notes: '' })
 setShowForm(false)
+showToast('Livestock group added successfully! 🐄')
 } catch (err) {
-  alert('Failed to add livestock: ' + err.message)}}
+  showToast('Failed to add livestock: ' + err.message, 'error')}
+}
     
 async function handleRecord() {
     if (!record.qty) return alert('Enter a quantity')
@@ -755,8 +769,9 @@ async function handleRecord() {
       await addRecord(showRecordForm, record)
       setRecord({ type: 'milk', qty: '', date: today() })
       setShowRecordForm(null)
+      showToast('Production recorded! 📋')
     } catch (err) {
-      alert('Failed to add record: ' + err.message)
+      showToast('Failed to add record: ' + err.message, 'error')
     }
   }
 
@@ -905,7 +920,7 @@ async function handleRecord() {
 // ─────────────────────────────────────────────────────────
 //  SALES & EXPENSES
 // ─────────────────────────────────────────────────────────
-function Sales({ sales, setSales, expenses, setExpenses, addSale, deleteSale, addExpense, deleteExpense, loading }) {
+function Sales({ sales, setSales, expenses, setExpenses, addSale, deleteSale, addExpense, deleteExpense, loading, showToast }) {
   const [tab, setTab] = useState('overview')
   const [showSaleForm, setShowSaleForm]       = useState(false)
   const [showExpenseForm, setShowExpenseForm] = useState(false)
@@ -942,8 +957,9 @@ function Sales({ sales, setSales, expenses, setExpenses, addSale, deleteSale, ad
     await addSale(saleForm)
     setSaleForm({ item: '', qty: '', price: '', total: '', buyer: '', date: today() })
     setShowSaleForm(false)
+    showToast('Sale recorded! 💰',)
   } catch (err) {
-    alert('Failed to add sale: ' + err.message)
+    showToast('Failed to add sale: ' + err.message, 'error')
   }}
   
 async function handleAddExpense() {
@@ -952,8 +968,9 @@ async function handleAddExpense() {
     await addExpense(expenseForm)
     setExpenseForm({ desc: '', cat: 'seeds', amount: '', date: today() })
     setShowExpenseForm(false)
+    showToast('Expense recorded! 📋')
   } catch (err) {
-    alert('Failed to add expense: ' + err.message)
+    showToast('Failed to add expense: ' + err.message, 'error')
   }
 }
   function tabStyle(id) {
@@ -1816,7 +1833,7 @@ function MarketPrices({ user }) {
 // ─────────────────────────────────────────────────────────
 //  SHAMBA BOT
 // ─────────────────────────────────────────────────────────
-function ShambaBot({ crops, tasks, livestock, sales, expenses, userName }) {
+function ShambaBot({ crops, tasks, livestock, sales, expenses, userName, isMobile }) {
   const [messages, setMessages] = useState([
     {
       role: 'bot',
@@ -1905,7 +1922,7 @@ RULES:
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 106px)', background: 'white', borderRadius: '16px', overflow: 'hidden', border: '1px solid #eeeeee' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'calc(100vh - 180px)' : 'calc(100vh - 130px)', background: 'white', borderRadius: '16px', overflow: 'hidden', border: '1px solid #eeeeee' }}>
       <div style={{ background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
         <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🤖</div>
         <div>
@@ -2419,7 +2436,7 @@ const counties = ['Baringo','Bomet','Bungoma','Busia','Elgeyo Marakwet','Embu','
           <div style={{ fontSize: '13px', opacity: 0.8, lineHeight: 1.6, marginBottom: '16px' }}>
             Smart farming companion for Kenyan farmers. Built to help you track, plan, and grow your farm business.
           </div>
-          <div style={{ fontSize: '12px', opacity: 0.6 }}>Version 2.0 · Phase 2</div>
+          <div style={{ fontSize: '12px', opacity: 0.6 }}>Version 3.0 · Phase 3</div>
           <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>Built with ❤️ for Kenyan farmers</div>
         </div>
       </div>
@@ -2580,6 +2597,7 @@ function App() {
   const [authPage, setAuthPage] = useState('landing')
   const [page, setPage]         = useState('dashboard')
   const isMobile = useIsMobile() 
+  const { showToast } = useToast()
   const {crops,addCrop, updateCropStage, deleteCrop, loading: cropsLoading}    = useCrops(user?.id)
   const {tasks, addTask, toggleTask, deleteTask, loading: tasksLoading}     = useTasks(user?.id)
   const {sales, expenses, addSale, deleteSale, addExpense, deleteExpense, loading: salesLoading}     = useSales(user?.id)
@@ -2651,6 +2669,7 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
         updateCropStage={updateCropStage}
         deleteCrop={deleteCrop}
         loading={cropsLoading}
+        showToast={showToast}
         />
       )
       case 'livestock': return wrap(
@@ -2661,6 +2680,7 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
         addRecord={addRecord}
         deleteLivestock={deleteLivestock}
         loading={livestockLoading}
+        showToast={showToast}
         />
       )
       case 'sales':  return wrap(
@@ -2674,6 +2694,7 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
         addExpense={addExpense}
         deleteExpense={deleteExpense}
         loading={salesLoading}
+        showToast={showToast}
         />
       )
       case 'tasks':  return wrap(
@@ -2684,12 +2705,13 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
         toggleTask={toggleTask}
         deleteTask={deleteTask}
         loading={tasksLoading}
+        showToast={showToast}
         />
       )
       case 'admin':     return wrap (<AdminDashboard user={user} />)
       case 'weather':   return wrap (<Weather />)
       case 'market':    return wrap (<MarketPrices user={user}/>)
-      case 'shamba':    return wrap (<ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} />)
+      case 'shamba':    return wrap (<ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} isMobile={isMobile} />)
       case 'vets':      return wrap (<VetDirectory user={user} profile={profile} />)
       case 'grants':    return wrap (<GovtGrants />)
       case 'settings':  return wrap (
@@ -2716,7 +2738,7 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
       background: '#f9fafb',
       paddingBottom: isMobile ? '70px' : '0'
     }}>
-      <Topbar page={page} isMobile={isMobile} />
+      <Topbar page={page} isMobile={isMobile} onNavigate={setPage} />
       <main style={{ padding: isMobile ? '16px' : '24px', marginTop: isMobile ? '56px' : '58px' }}>
         {renderPage()}
       </main>
