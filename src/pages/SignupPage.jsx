@@ -29,15 +29,18 @@ export default function SignupPage({ onNavigateToLogin }) {
     outline: 'none', boxSizing: 'border-box'
   }
 
-  function validateStep1() {
-    if (!form.fullName.trim())  return 'Full name is required'
-    if (!form.email.trim())     return 'Email is required'
-    if (!form.email.includes('@')) return 'Enter a valid email'
-    if (!form.password)         return 'Password is required'
-    if (form.password.length < 8) return 'Password must be at least 8 characters'
-    if (form.password !== form.confirmPassword) return 'Passwords do not match'
-    return null
-  }
+function validateStep1() {
+  if (!form.fullName.trim())  return 'Full name is required'
+  if (!form.email.trim())     return 'Email is required'
+  if (!form.email.includes('@')) return 'Enter a valid email address'
+  if (!form.password)         return 'Password is required'
+  if (form.password.length < 8) return 'Password must be at least 8 characters'
+  if (!/[A-Z]/.test(form.password)) return 'Password must contain at least one uppercase letter'
+  if (!/[0-9]/.test(form.password)) return 'Password must contain at least one number'
+  if (!/[^A-Za-z0-9]/.test(form.password)) return 'Password must contain at least one special character (!@#$%)'
+  if (form.password !== form.confirmPassword) return 'Passwords do not match'
+  return null
+}
 
   async function handleSignup() {
     if (!form.county) return setError('Please select your county')
@@ -54,7 +57,11 @@ export default function SignupPage({ onNavigateToLogin }) {
       })
       setSuccess(true)
     } catch (err) {
-      setError(err.message || 'Signup failed. Please try again.')
+      if(err.message?.includes('already registered') || err.message?.includes('already exists')) {
+        setError('An account with this email  already exists. Please sign in instead.')
+      } else {
+        setError(err.message || 'Signup failed. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -161,6 +168,69 @@ export default function SignupPage({ onNavigateToLogin }) {
               <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161', display: 'block', marginBottom: '6px' }}>Password * (min 8 characters)</label>
               <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••••" style={inputStyle} />
             </div>
+        {form.password && (
+  <div style={{ marginTop: '6px' }}>
+    {/* Strength bar */}
+    <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+      {[1,2,3,4].map(level => {
+        const strength =
+          form.password.length === 0 ? 0 :
+          form.password.length < 6   ? 1 :
+          form.password.length < 8   ? 2 :
+          (!/[A-Z]/.test(form.password) || !/[0-9]/.test(form.password)) ? 3 : 4
+
+        return (
+          <div key={level} style={{
+            flex: 1, height: '4px', borderRadius: '99px',
+            background: level <= strength
+              ? strength === 1 ? '#EF5350'
+              : strength === 2 ? '#FF9800'
+              : strength === 3 ? '#FFC107'
+              : '#2E7D32'
+              : '#E0E0E0',
+            transition: 'background 0.3s'
+          }} />
+        )
+      })}
+    </div>
+    {/* Strength label */}
+    <div style={{
+      fontSize: '11px', fontWeight: '600',
+      color:
+        form.password.length < 6   ? '#EF5350' :
+        form.password.length < 8   ? '#FF9800' :
+        (!/[A-Z]/.test(form.password) || !/[0-9]/.test(form.password)) ? '#FFC107' :
+        '#2E7D32'
+    }}>
+      {form.password.length === 0  ? '' :
+       form.password.length < 6    ? 'Too weak' :
+       form.password.length < 8    ? 'Weak — add more characters' :
+       (!/[A-Z]/.test(form.password) || !/[0-9]/.test(form.password)) ? 'Fair — add uppercase and numbers' :
+       !/[^A-Za-z0-9]/.test(form.password) ? 'Good — add a special character for strong' :
+       '✅ Strong password'}
+    </div>
+    {/* Requirements checklist */}
+    <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+      {[
+        { label: 'At least 8 characters',           pass: form.password.length >= 8 },
+        { label: 'One uppercase letter (A-Z)',        pass: /[A-Z]/.test(form.password) },
+        { label: 'One number (0-9)',                  pass: /[0-9]/.test(form.password) },
+        { label: 'One special character (!@#$%)',     pass: /[^A-Za-z0-9]/.test(form.password) },
+      ].map(req => (
+        <div key={req.label} style={{
+          display: 'flex', alignItems: 'center', gap: '6px',
+          fontSize: '11px',
+          color: req.pass ? '#2E7D32' : '#9E9E9E'
+        }}>
+          <span>{req.pass ? '✅' : '○'}</span>
+          {req.label}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+
             <div>
               <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161', display: 'block', marginBottom: '6px' }}>Confirm Password *</label>
               <input type="password" value={form.confirmPassword} onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))} placeholder="••••••••" style={inputStyle} />
