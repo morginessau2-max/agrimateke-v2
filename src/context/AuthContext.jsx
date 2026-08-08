@@ -18,15 +18,21 @@ export function AuthProvider({ children }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setUser(session?.user ?? null)
-        if (session?.user) fetchProfile(session.user.id)
-        else {
-          setProfile(null)
-          setLoading(false)
-        }
+  async (_event, session) => {
+    setUser(session?.user ?? null)
+    if (session?.user) {
+      await fetchProfile(session.user.id)
+      // Check for pending invite after login
+      const pendingToken = sessionStorage.getItem('inviteToken')
+      if (pendingToken) {
+        // Token will be picked up by App.jsx inviteToken state
       }
-    )
+    } else {
+      setProfile(null)
+      setLoading(false)
+    }
+  }
+)
 
     return () => subscription.unsubscribe()
   }, [])

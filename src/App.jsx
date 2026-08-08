@@ -5,14 +5,19 @@ import SignupPage from './pages/SignupPage'
 import LandingPage from './pages/LandingPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
 import ProfileSetupPage from './pages/ProfileSetupPage'
+import InvitePage from './pages/InvitePage'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useToast } from './components/Toast'
 import { SkeletonBox, SkeletonGrid, SkeletonList, SkeletonCard, SkeletonDashboard } from './components/Skeleton'
 import EmptyState from './components/EmptyState'
 import NotFoundPage from './pages/NotFoundPage'
+import CooperativePage from './pages/CooperativePage'
 import { useCrops } from './hooks/useCrops'
 import { useTasks } from './hooks/useTasks'
 import { useSales } from './hooks/useSales'
+import {usePlan} from './hooks/usePlan'
+import PlanGate from './components/PlanGate'
+import UpgradeBanner from './components/UpgradeBanner'
 import { useLivestock } from './hooks/useLivestock'
 import { supabase} from './lib/supabase'
 
@@ -77,6 +82,7 @@ function Sidebar({ activePage, onNavigate, userName, profile }) {
     { id: 'shamba',    label: 'Shamba Bot',       icon: '🤖' },
     { id: 'vets',      label: 'Vet Directory',    icon: '🏥' },
     { id: 'grants',    label: 'Govt Grants',      icon: '📋' },
+    { id: 'cooperative', label: 'Cooperative',    icon: '🤝' },
     { id: 'settings',  label: 'Settings',         icon: '⚙️' },
     ...(profile?.is_admin ? [{ id: 'admin', label: 'Admin', icon: '🔐' }] : [])
   ]
@@ -128,7 +134,17 @@ function Sidebar({ activePage, onNavigate, userName, profile }) {
           </div>
           <div>
             <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.9)' }}>{userName}</div>
-            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>Free Plan</div>
+            <div style={{ 
+              fontSize: '10px', 
+              color: profile?.plan === 'pro' ? '#69f0AE' :
+              'rgba(255,255,255,0.4)' ,
+              fontweight: profile?.plan !== 'free' ? '700' : '400'
+            }}>
+              {profile?.plan === 'pro'?              '⭐ Pro Plan' :
+              profile?.plan === 'cooperative_pro'  ? '🤝 Cooperative Pro' :
+              'Free Plan'
+              }
+            </div>
           </div>
         </div>
       </div>
@@ -243,6 +259,7 @@ function Topbar({ page, isMobile, onNavigate }) {
     sales: 'Sales & Expenses', tasks: 'Tasks', weather: 'Weather',
     market: 'Market Prices', shamba: 'Shamba Bot',
     vets: 'Vet Directory', grants: 'Govt Grants',
+    cooperative: 'Cooperative', 
     settings: 'Settings', admin: 'Admin'
   }
 
@@ -1833,7 +1850,7 @@ function MarketPrices({ user }) {
 // ─────────────────────────────────────────────────────────
 //  SHAMBA BOT
 // ─────────────────────────────────────────────────────────
-function ShambaBot({ crops, tasks, livestock, sales, expenses, userName, isMobile }) {
+function ShambaBot({ crops, tasks, livestock, sales, expenses, userName, isMobile, isFree }) {
   const [messages, setMessages] = useState([
     {
       role: 'bot',
@@ -1934,6 +1951,31 @@ RULES:
           <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>Online</span>
         </div>
       </div>
+
+      {isFree && (
+  <div style={{
+    background: 'linear-gradient(135deg, #fff8e1, #fff3e0)',
+    border: '1px solid #FFE082',
+    padding: '10px 16px',
+    display: 'flex', alignItems: 'center',
+    justifyContent: 'space-between', gap: '8px',
+    flexShrink: 0, flexWrap: 'wrap'
+  }}>
+    <div style={{ fontSize: '12px', color: '#E65100', fontWeight: '600' }}>
+      ⭐ Free plan: 10 messages/day · Upgrade for unlimited
+    </div>
+    <button style={{
+      padding: '5px 12px',
+      background: 'linear-gradient(135deg, #f57f17, #ff8f00)',
+      color: 'white', border: 'none', borderRadius: '6px',
+      fontSize: '11px', fontWeight: '700',
+      cursor: 'pointer', fontFamily: 'Outfit, sans-serif',
+      whiteSpace: 'nowrap'
+    }}>
+      Upgrade ⭐
+    </button>
+  </div>
+)}
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', background: '#f9fafb', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {messages.map((msg, i) => (
@@ -2423,8 +2465,10 @@ const counties = ['Baringo','Bomet','Bungoma','Busia','Elgeyo Marakwet','Embu','
                 <span>✓</span> {f}
               </div>
             ))}
-            <button style={{ marginTop: '14px', width: '100%', padding: '10px', background: 'white', color: '#f57f17', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
-              Upgrade via M-Pesa
+            <button 
+            onClick={() => alert('Upgrade to Pro to access this feature!')}
+            style={{ marginTop: '14px', width: '100%', padding: '10px', background: 'white', color: '#f57f17', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+              Upgrade via M-Pesa - Coming Soon
             </button>
           </div>
         </div>
@@ -2597,7 +2641,18 @@ function App() {
   const [authPage, setAuthPage] = useState('landing')
   const [page, setPage]         = useState('dashboard')
   const isMobile = useIsMobile() 
+  // Detect invite token from URL
+  const [inviteToken, setInviteToken] = useState(() => {
+  const params = new URLSearchParams(window.location.search)
+  const tokenFromUrl = params.get('invite')
+  if (tokenFromUrl) {
+    sessionStorage.setItem('inviteToken', tokenFromUrl)
+    return tokenFromUrl
+  }
+  return sessionStorage.getItem('inviteToken') || null
+})
   const { showToast } = useToast()
+  const { isFree, isPro, isCooperative, features } = usePlan()
   const {crops,addCrop, updateCropStage, deleteCrop, loading: cropsLoading}    = useCrops(user?.id)
   const {tasks, addTask, toggleTask, deleteTask, loading: tasksLoading}     = useTasks(user?.id)
   const {sales, expenses, addSale, deleteSale, addExpense, deleteExpense, loading: salesLoading}     = useSales(user?.id)
@@ -2634,6 +2689,28 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
   return <ProfileSetupPage/>
 }
 
+  // Show invite page if token exists
+if (inviteToken && !user) {
+  return (
+    <InvitePage
+      token={inviteToken}
+      onDone={() => {
+        setInviteToken(null)
+        sessionStorage.removeItem('inviteToken')
+        window.history.replaceState({}, '', '/')
+      }}
+      onLogin={() => {
+        setAuthPage('login')
+        setInviteToken(null)
+      }}
+      onSignup={() => {
+        setAuthPage('signup')
+        setInviteToken(null)
+      }}
+    />
+  )
+}
+
   // Not logged in — show auth pages
   if (!user) {
     if (authPage === 'landing') {
@@ -2651,6 +2728,22 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
   }
 // Logged in — show main app
   const userName = profile?.full_name || user.email?.split('@')[0] || 'Farmer'
+
+  // Logged in and has invite token — process it
+if (user && user.email_confirmed_at && inviteToken) {
+  return (
+    <InvitePage
+      token={inviteToken}
+      onDone={() => {
+        setInviteToken(null)
+        sessionStorage.removeItem('inviteToken')
+        window.history.replaceState({}, '', '/')
+      }}
+      onLogin={() => setAuthPage('login')}
+      onSignup={() => setAuthPage('signup')}
+    />
+  )
+}
 
 
   function renderPage() {
@@ -2711,9 +2804,10 @@ if (user && user.email_confirmed_at && profile !== null && !profile?.county) {
       case 'admin':     return wrap (<AdminDashboard user={user} />)
       case 'weather':   return wrap (<Weather />)
       case 'market':    return wrap (<MarketPrices user={user}/>)
-      case 'shamba':    return wrap (<ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} isMobile={isMobile} />)
+      case 'shamba':    return wrap (<ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} isMobile={isMobile} isFree={isFree} />)
       case 'vets':      return wrap (<VetDirectory user={user} profile={profile} />)
       case 'grants':    return wrap (<GovtGrants />)
+      case 'cooperative': return wrap (<CooperativePage onNavigate={setPage}/>)
       case 'settings':  return wrap (
 
      <Settings
