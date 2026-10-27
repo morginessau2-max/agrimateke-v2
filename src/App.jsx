@@ -20,7 +20,11 @@ import PlanGate from './components/PlanGate'
 import UpgradeBanner from './components/UpgradeBanner'
 import { useLivestock } from './hooks/useLivestock'
 import { supabase} from './lib/supabase'
-
+import {
+  LayoutDashboard, Sprout, Beef, Wallet, CheckSquare, CloudSun,
+  TrendingUp, Bot, Stethoscope, FileText, Settings as SettingsIcon,
+  Handshake, Lock, Star, Menu, X
+} from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────
 //  HELPERS
@@ -72,20 +76,20 @@ function Sidebar({ activePage, onNavigate, userName, profile }) {
   const isMobile = useIsMobile()
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard',      icon: '📊' },
-    { id: 'crops',     label: 'My Crops',        icon: '🌿' },
-    { id: 'livestock', label: 'Livestock',        icon: '🐄' },
-    { id: 'sales',     label: 'Sales & Expenses', icon: '💰' },
-    { id: 'tasks',     label: 'Tasks',            icon: '✅' },
-    { id: 'weather',   label: 'Weather',          icon: '🌦️' },
-    { id: 'market',    label: 'Market Prices',    icon: '📈' },
-    { id: 'shamba',    label: 'Shamba Bot',       icon: '🤖' },
-    { id: 'vets',      label: 'Vet Directory',    icon: '🏥' },
-    { id: 'grants',    label: 'Govt Grants',      icon: '📋' },
-    { id: 'cooperative', label: 'Cooperative',    icon: '🤝' },
-    { id: 'settings',  label: 'Settings',         icon: '⚙️' },
-    ...(profile?.is_admin ? [{ id: 'admin', label: 'Admin', icon: '🔐' }] : [])
-  ]
+  { id: 'dashboard',   label: 'Dashboard',        Icon: LayoutDashboard },
+  { id: 'crops',       label: 'My Crops',          Icon: Sprout },
+  { id: 'livestock',   label: 'Livestock',         Icon: Beef },
+  { id: 'sales',       label: 'Sales & Expenses',  Icon: Wallet },
+  { id: 'tasks',       label: 'Tasks',             Icon: CheckSquare },
+  { id: 'weather',     label: 'Weather',           Icon: CloudSun },
+  { id: 'market',      label: 'Market Prices',     Icon: TrendingUp },
+  { id: 'shamba',      label: 'Shamba Bot',        Icon: Bot },
+  { id: 'vets',        label: 'Vet Directory',     Icon: Stethoscope },
+  { id: 'grants',      label: 'Govt Grants',       Icon: FileText },
+  { id: 'cooperative', label: 'Cooperative',       Icon: Handshake },
+  { id: 'settings',    label: 'Settings',          Icon: SettingsIcon },
+  ...(profile?.is_admin ? [{ id: 'admin', label: 'Admin', Icon: Lock }] : [])
+]
 
   function handleNav(id) {
     onNavigate(id)
@@ -116,7 +120,7 @@ function Sidebar({ activePage, onNavigate, userName, profile }) {
             fontSize: '14px', border: 'none', width: '100%',
             textAlign: 'left', fontFamily: 'Outfit, sans-serif', marginBottom: '2px',
           }}>
-            <span>{item.icon}</span>{item.label}
+            <item.Icon size={18} strokeWidth={2} />{item.label}
           </button>
         ))}
       </nav>
@@ -174,7 +178,7 @@ function Sidebar({ activePage, onNavigate, userName, profile }) {
               width: '40px', height: '40px', borderRadius: '8px',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-            {open ? '✕' : '☰'}
+            {open ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
@@ -210,28 +214,28 @@ function Sidebar({ activePage, onNavigate, userName, profile }) {
           boxShadow: '0 -2px 8px rgba(0,0,0,0.08)'
         }}>
           {[
-            { id: 'dashboard', icon: '📊', label: 'Home' },
-            { id: 'crops',     icon: '🌿', label: 'Crops' },
-            { id: 'tasks',     icon: '✅', label: 'Tasks' },
-            { id: 'sales',     icon: '💰', label: 'Sales' },
-            { id: 'shamba',    icon: '🤖', label: 'Bot' },
-          ].map(item => (
-            <button
-              key={item.id}
-              onClick={() => handleNav(item.id)}
-              style={{
-                flex: 1, display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center', gap: '2px',
-                border: 'none', cursor: 'pointer',
-                background: activePage === item.id ? '#e8f5e9' : 'white',
-                borderTop: activePage === item.id ? '2px solid #2e7d32' : '2px solid transparent',
-              }}>
-              <span style={{ fontSize: '20px' }}>{item.icon}</span>
-              <span style={{ fontSize: '9px', fontWeight: '600', color: activePage === item.id ? '#2e7d32' : '#9e9e9e', fontFamily: 'Outfit, sans-serif' }}>
-                {item.label}
-              </span>
-            </button>
-          ))}
+  { id: 'dashboard', Icon: LayoutDashboard, label: 'Home' },
+  { id: 'crops',     Icon: Sprout,          label: 'Crops' },
+  { id: 'tasks',     Icon: CheckSquare,     label: 'Tasks' },
+  { id: 'sales',     Icon: Wallet,          label: 'Sales' },
+  { id: 'shamba',    Icon: Bot,             label: 'Bot' },
+].map(item => (
+  <button
+    key={item.id}
+    onClick={() => handleNav(item.id)}
+    style={{
+      flex: 1, display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: '2px',
+      border: 'none', cursor: 'pointer',
+      background: activePage === item.id ? '#e8f5e9' : 'white',
+      borderTop: activePage === item.id ? '2px solid #2e7d32' : '2px solid transparent',
+    }}>
+    <item.Icon size={20} color={activePage === item.id ? '#2e7d32' : '#9e9e9e'} />
+    <span style={{ fontSize: '9px', fontWeight: '600', color: activePage === item.id ? '#2e7d32' : '#9e9e9e', fontFamily: 'Outfit, sans-serif' }}>
+      {item.label}
+    </span>
+  </button>
+))}
         </div>
       </>
     )
@@ -283,7 +287,7 @@ function Topbar({ page, isMobile, onNavigate }) {
           color: 'white', border: 'none', borderRadius: '8px',
           fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
         }}>
-        ⭐ Go Pro
+        <Star size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />Go Pro
       </button>
     </header>
   )
@@ -407,29 +411,29 @@ function Dashboard({ crops, tasks, sales, expenses, userName, onNavigate, loadin
         gap: '12px', marginBottom: '24px'
       }}>
         <MetricCard
-          icon="💰" label="Total Revenue"
-          value={fmt(totalRevenue)}
-          sub={totalRevenue === 0 ? 'Record a sale to start' : 'All time'}
-          color="#2e7d32"
-        />
-        <MetricCard
-          icon="📈" label="Net Profit"
-          value={fmt(netProfit)}
-          sub={netProfit >= 0 ? 'Profit' : 'Running at a loss'}
-          color={netProfit >= 0 ? '#2e7d32' : '#ef5350'}
-        />
-        <MetricCard
-          icon="🌿" label="Active Crops"
-          value={activeCrops}
-          sub={readyCrops > 0 ? `${readyCrops} ready to harvest` : 'Track your crops'}
-          color="#0277bd"
-        />
-        <MetricCard
-          icon="✅" label="Pending Tasks"
-          value={pendingTasks}
-          sub={overdueTasks > 0 ? `${overdueTasks} overdue` : pendingTasks === 0 ? 'All done! 🎉' : 'On track'}
-          color={overdueTasks > 0 ? '#ef5350' : '#2e7d32'}
-        />
+  icon={<Wallet size={28} color="#2e7d32" />} label="Total Revenue"
+  value={fmt(totalRevenue)}
+  sub={totalRevenue === 0 ? 'Record a sale to start' : 'All time'}
+  color="#2e7d32"
+/>
+<MetricCard
+  icon={<TrendingUp size={28} color={netProfit >= 0 ? '#2e7d32' : '#ef5350'} />} label="Net Profit"
+  value={fmt(netProfit)}
+  sub={netProfit >= 0 ? 'Profit' : 'Running at a loss'}
+  color={netProfit >= 0 ? '#2e7d32' : '#ef5350'}
+/>
+<MetricCard
+  icon={<Sprout size={28} color="#0277bd" />} label="Active Crops"
+  value={activeCrops}
+  sub={readyCrops > 0 ? `${readyCrops} ready to harvest` : 'Track your crops'}
+  color="#0277bd"
+/>
+<MetricCard
+  icon={<CheckSquare size={28} color={overdueTasks > 0 ? '#ef5350' : '#2e7d32'} />} label="Pending Tasks"
+  value={pendingTasks}
+  sub={overdueTasks > 0 ? `${overdueTasks} overdue` : pendingTasks === 0 ? 'All done!' : 'On track'}
+  color={overdueTasks > 0 ? '#ef5350' : '#2e7d32'}
+/>
       </div>
 
       {/* Bottom Grid */}
