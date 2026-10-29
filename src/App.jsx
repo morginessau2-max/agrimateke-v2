@@ -257,7 +257,7 @@ function Sidebar({ activePage, onNavigate, userName, profile }) {
 // ─────────────────────────────────────────────────────────
 //  TOPBAR
 // ─────────────────────────────────────────────────────────
-function Topbar({ page, isMobile, onNavigate }) {
+function Topbar({ page, isMobile, onNavigate, isPro }) {
   const titles = {
     dashboard: 'Dashboard', crops: 'My Crops', livestock: 'Livestock',
     sales: 'Sales & Expenses', tasks: 'Tasks', weather: 'Weather',
@@ -280,15 +280,29 @@ function Topbar({ page, isMobile, onNavigate }) {
       <div style={{ fontSize: '17px', fontWeight: '600', color: '#212121' }}>
         {titles[page] || 'AgriMateKE'}
       </div>
-      <button
-        onClick={() => onNavigate('settings')}
-        style={{
-          padding: '6px 14px', background: 'linear-gradient(135deg, #f57f17, #ff8f00)',
-          color: 'white', border: 'none', borderRadius: '8px',
-          fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
-        }}>
-        <Star size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />Go Pro
-      </button>
+      {isPro ? (
+  <span style={{
+    padding: '6px 14px', background: '#e8f5e9', color: '#2e7d32',
+    borderRadius: '8px', fontSize: '13px', fontWeight: '700',
+    display: 'inline-flex', alignItems: 'center', gap: '6px'
+  }}>
+    <Star size={14} /> Pro
+  </span>
+) : (
+  <button
+    onClick={() => onNavigate('settings')}
+    style={{
+      padding: '6px 14px',
+      background: 'linear-gradient(135deg, #f57f17, #ff8f00)',
+      color: 'white', border: 'none', borderRadius: '8px',
+      fontSize: '13px', fontWeight: '600',
+      cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+    }}>
+    <Star size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />Go Pro
+  </button>
+)}
+
+      
     </header>
   )
 }
@@ -1854,7 +1868,7 @@ function MarketPrices({ user }) {
 // ─────────────────────────────────────────────────────────
 //  SHAMBA BOT
 // ─────────────────────────────────────────────────────────
-function ShambaBot({ crops, tasks, livestock, sales, expenses, userName, isMobile, isFree }) {
+function ShambaBot({ crops, tasks, livestock, sales, expenses, userName, isMobile, isFree, userId  }) {
   const [messages, setMessages] = useState([
     {
       role: 'bot',
@@ -1863,6 +1877,28 @@ function ShambaBot({ crops, tasks, livestock, sales, expenses, userName, isMobil
   ])
   const [input, setInput]   = useState('')
   const [typing, setTyping] = useState(false)
+  const FREE_LIMIT = 10
+const [used, setUsed] = useState(0)
+const limitReached = isFree && used >= FREE_LIMIT
+
+function startOfTodayNairobi() {
+  const offset = 3 * 60 * 60 * 1000
+  const shifted = new Date(Date.now() + offset)
+  shifted.setUTCHours(0, 0, 0, 0)
+  return new Date(shifted.getTime() - offset).toISOString()
+}
+
+useEffect(() => {
+  if (!isFree || !userId) return
+  supabase
+    .from('message_logs')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', startOfTodayNairobi())
+    .then(({ count }) => setUsed(count || 0))
+}, [isFree, userId])
+
+
   const chatRef             = useRef(null)
 
   const chips = [
@@ -1893,57 +1929,79 @@ NET PROFIT: KSh ${(totalRevenue - totalExpenses).toLocaleString()}`
   }
 
   async function send(msgText) {
-    const text = (msgText || input).trim()
-    if (!text || typing) return
-    setMessages(prev => [...prev, { role: 'user', text }])
-    setInput('')
-    setTyping(true)
+  const text = (msgText || input).trim()
+  if (!text || typing || limitReached) return
 
-    try {
-      const history = messages.slice(1).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }))
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1024,
-          system: `You are Shamba Bot, an expert AI farming assistant for AgriMateKE — a smart farming app for Kenyan farmers. You are warm, practical, and deeply knowledgeable about Kenyan agriculture.
+  setMessages(prev => [...prev, { role: 'user', text }])
+  setInput('')
+  setTyping(true)
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const history = messages.slice(1).map(m => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: m.text
+    }))
+
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`
+      },
+      body: JSON.stringify({
+        system: `You are Shamba Bot, an expert AI farming assistant for AgriMateKE, a smart farming app for Kenyan farmers. You are warm, practical and deeply knowledgeable about Kenyan agriculture.
 
 PERSONALITY:
-- Friendly and encouraging like a trusted agricultural officer
+- Friendly and encouraging, like a trusted agricultural officer
 - Use simple language farmers understand
 - Naturally mix in Swahili words (shamba, mazao, mifugo, bei)
-- Give specific actionable advice — never vague
-- Always relate advice to Kenyan context
-- Use bullet points and emojis to make responses easy to read
-
-EXPERTISE: Crops, livestock, soil health, fertilisers, pest control, market prices, weather interpretation, Kenya government programs (KALRO, AFA, AFC loans)
+- Give specific, actionable advice and relate it to the Kenyan context
+- Use short bullet points to keep answers easy to read
 
 CURRENT FARMER DATA:
 ${buildContext()}
 
 RULES:
-- Always reference this farmer's actual data when relevant
-- If asked in Swahili respond in Swahili, if English respond in English
-- Never invent specific prices — refer them to the Market Prices section
-- Always end with one practical tip or follow-up question`,
-          messages: [...history, { role: 'user', content: text }]
-        })
+- Use this farmer's actual data when relevant
+- If asked in Swahili, respond in Swahili. If English, respond in English
+- Never invent specific prices. Refer them to the Market Prices section
+- End with one practical tip or a follow-up question`,
+        messages: [...history, { role: 'user', content: text }]
       })
+    })
 
-      const data  = await res.json()
-      const reply = data.content?.[0]?.text
-      if (!reply) throw new Error('Empty response')
-      setMessages(prev => [...prev, { role: 'bot', text: reply }])
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'bot', text: `⚠️ Debug: ${err.message}` }])
-    } finally {
-      setTyping(false)
+    const data = await res.json()
+
+    if (res.status === 429) {
+      setUsed(data.usage?.used ?? FREE_LIMIT)
+      setMessages(prev => [...prev, {
+        role: 'bot',
+        text: "You've used all 10 free messages for today. Your messages reset at midnight, or upgrade to Pro for unlimited chats."
+      }])
+      return
     }
+
+    if (!res.ok) throw new Error(data.error || 'Request failed')
+
+    const reply = data.content?.[0]?.text
+    if (!reply) throw new Error('Empty response')
+
+    if (data.usage && isFree) setUsed(data.usage.used)
+    setMessages(prev => [...prev, { role: 'bot', text: reply }])
+
+  } catch (err) {
+    setMessages(prev => [...prev, {
+      role: 'bot',
+      text: 'Shamba Bot is unavailable right now. Please try again in a little while.'
+    }])
+  } finally {
+    setTyping(false)
   }
+}
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'calc(100dvh - 190px)' : 'calc(100vh - 130px)', background: 'white', borderRadius: '16px', overflow: 'hidden', border: '1px solid #eeeeee' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'calc(100dvh - 164px)' : 'calc(100dvh - 112px)', minHeight: '420px', background: 'white', borderRadius: '16px', overflow: 'hidden', border: '1px solid #eeeeee' }}>
       <div style={{ background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
         <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🤖</div>
         <div>
@@ -1958,15 +2016,17 @@ RULES:
 
       {isFree && (
   <div style={{
-    background: 'linear-gradient(135deg, #fff8e1, #fff3e0)',
-    border: '1px solid #FFE082',
+    background: limitReached ? '#FFEBEE' : 'linear-gradient(135deg, #fff8e1, #fff3e0)',
+    border: `1px solid ${limitReached ? '#FFCDD2' : '#FFE082'}`,
     padding: '10px 16px',
     display: 'flex', alignItems: 'center',
     justifyContent: 'space-between', gap: '8px',
     flexShrink: 0, flexWrap: 'wrap'
   }}>
-    <div style={{ fontSize: '12px', color: '#E65100', fontWeight: '600' }}>
-      ⭐ Free plan: 10 messages/day · Upgrade for unlimited
+    <div style={{ fontSize: '12px', fontWeight: '600', color: limitReached ? '#C62828' : '#E65100' }}>
+      {limitReached
+        ? 'Daily limit reached. Resets at midnight.'
+        : `${Math.max(FREE_LIMIT - used, 0)} of ${FREE_LIMIT} free messages left today`}
     </div>
     <button style={{
       padding: '5px 12px',
@@ -1976,18 +2036,18 @@ RULES:
       cursor: 'pointer', fontFamily: 'Outfit, sans-serif',
       whiteSpace: 'nowrap'
     }}>
-      Upgrade ⭐
+      Upgrade
     </button>
   </div>
 )}
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', background: '#f9fafb', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', background: '#f9fafb', display: 'flex', flexDirection: 'column', gap: '12px', minHeight: '0px' }}>
         {messages.map((msg, i) => (
           <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row', maxWidth: '80%' }}>
             <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: msg.role === 'bot' ? '#e8f5e9' : '#2e7d32', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
               {msg.role === 'bot' ? '🤖' : '👤'}
             </div>
-            <div style={{ padding: '10px 14px', borderRadius: '18px', fontSize: '13px', lineHeight: 1.6, background: msg.role === 'bot' ? 'white' : '#2e7d32', color: msg.role === 'bot' ? '#212121' : 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', borderBottomLeftRadius: msg.role === 'bot' ? '4px' : '18px', borderBottomRightRadius: msg.role === 'user' ? '4px' : '18px', whiteSpace: 'pre-line' }}>
+            <div style={{ padding: '10px 14px', borderRadius: '18px', fontSize: '13px', lineHeight: 1.6, background: msg.role === 'bot' ? 'white' : '#2e7d32', color: msg.role === 'bot' ? '#212121' : 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', borderBottomLeftRadius: msg.role === 'bot' ? '4px' : '18px', borderBottomRightRadius: msg.role === 'user' ? '4px' : '18px', whiteSpace: 'pre-line', minWidth: 0 }}>
               {msg.text}
             </div>
           </div>
@@ -2010,8 +2070,8 @@ RULES:
       </div>
 
       <div style={{ padding: '12px 16px', background: 'white', borderTop: '1px solid #eeeeee', display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
-        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Ask Shamba Bot anything about your farm..." style={{ flex: 1, background: '#f5f5f5', border: '1.5px solid transparent', borderRadius: '99px', padding: '10px 16px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none' }} />
-        <button onClick={() => send()} disabled={!input.trim() || typing} style={{ width: '40px', height: '40px', borderRadius: '50%', background: !input.trim() || typing ? '#e0e0e0' : '#2e7d32', border: 'none', color: 'white', fontSize: '16px', cursor: !input.trim() || typing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>➤</button>
+        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder={limitReached ? 'Daily limit reached. Upgrade for unlimited chats' : 'Ask Shamba Bot anything about your farm...'} style={{ flex: 1, background: '#f5f5f5', border: '1.5px solid transparent', borderRadius: '99px', padding: '10px 16px', fontFamily: 'Outfit, sans-serif', fontSize: '14px', outline: 'none' }} />
+        <button onClick={() => send()} disabled={!input.trim() || typing || limitReached} style={{ width: '40px', height: '40px', borderRadius: '50%', background: !input.trim() || typing ? '#e0e0e0' : '#2e7d32', border: 'none', color: 'white', fontSize: '16px', cursor: !input.trim() || typing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>➤</button>
       </div>
 
       <style>{`@keyframes blink { 0%, 80%, 100% { opacity: 0.25 } 40% { opacity: 1 } }`}</style>
@@ -2808,7 +2868,7 @@ if (user && user.email_confirmed_at && inviteToken) {
       case 'admin':     return wrap (<AdminDashboard user={user} />)
       case 'weather':   return wrap (<Weather />)
       case 'market':    return wrap (<MarketPrices user={user}/>)
-      case 'shamba':    return wrap (<ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} isMobile={isMobile} isFree={isFree} />)
+      case 'shamba':    return wrap (<ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} isMobile={isMobile} isFree={isFree} userId={user.id} />)
       case 'vets':      return wrap (<VetDirectory user={user} profile={profile} />)
       case 'grants':    return wrap (<GovtGrants />)
       case 'cooperative': return wrap (<CooperativePage onNavigate={setPage}/>)
@@ -2832,11 +2892,13 @@ if (user && user.email_confirmed_at && inviteToken) {
     <div style={{
       marginLeft: isMobile ? '0' : '240px',
       flex: 1,
+      minWidth: '0',
+      overflowX: 'hidden',
       minHeight: '100vh',
       background: '#f9fafb',
       paddingBottom: isMobile ? '70px' : '0'
     }}>
-      <Topbar page={page} isMobile={isMobile} onNavigate={setPage} />
+      <Topbar page={page} isMobile={isMobile} onNavigate={setPage} isPro={isPro}/>
       <main style={{ padding: isMobile ? '16px' : '24px', marginTop: isMobile ? '56px' : '58px' }}>
         {renderPage()}
       </main>
