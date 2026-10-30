@@ -110,7 +110,10 @@ exports.handler = async function (event) {
     }
 
     // 6. Count the message only after a successful reply
-    await admin.from('message_logs').insert({ user_id: user.id })
+    //await admin.from('message_logs').insert({ user_id: user.id })
+    const { error: logError } = await admin.from('message_logs').insert({ user_id: user.id })
+    if (logError) console.error('message_logs insert failed:', logError.message)
+
 
     return json(200, {
       content: reply.content,

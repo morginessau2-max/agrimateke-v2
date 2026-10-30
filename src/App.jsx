@@ -2313,104 +2313,158 @@ function VetDirectory({ user, profile }) {
 //  GOVT GRANTS
 // ─────────────────────────────────────────────────────────
 function GovtGrants() {
-  const [filter, setFilter] = useState('all')
-  const [search, setSearch] = useState('')
+  const [grants,  setGrants]  = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter,  setFilter]  = useState('all')
+  const [search,  setSearch]  = useState('')
 
-  const grants = [
-    { id: 1, title: 'AFC Agricultural Loan', org: 'Agricultural Finance Corporation', category: 'loan', amount: 'Up to KSh 5,000,000', deadline: 'Rolling', desc: 'Low-interest loans for farmers to buy inputs, equipment, land development and agri-business expansion.', link: 'https://www.afc.co.ke', eligibility: 'Registered farmers, cooperatives, agribusinesses', status: 'open' },
-    { id: 2, title: 'KALRO Research Grants', org: 'Kenya Agricultural & Livestock Research Org', category: 'grant', amount: 'Varies', deadline: 'Annual', desc: 'Research partnerships and technology transfer grants for innovative farming solutions.', link: 'https://www.kalro.org', eligibility: 'Research institutions, farmer groups', status: 'open' },
-    { id: 3, title: 'e-Voucher Subsidy Program', org: 'Ministry of Agriculture', category: 'subsidy', amount: 'KSh 5,000 subsidy', deadline: 'Seasonal', desc: 'Government subsidy on certified seeds, fertilisers and other farm inputs via digital vouchers.', link: 'https://www.agriculture.go.ke', eligibility: 'Smallholder farmers with at least 0.5 acres', status: 'open' },
-    { id: 4, title: 'Youth in Agribusiness Fund', org: 'Ministry of Youth Affairs', category: 'grant', amount: 'Up to KSh 500,000', deadline: 'December 2025', desc: 'Grants for young entrepreneurs starting agribusiness ventures including processing, marketing and production.', link: 'https://www.youth.go.ke', eligibility: 'Youth aged 18-35 with agribusiness plan', status: 'open' },
-    { id: 5, title: 'Women Enterprise Fund - Agri', org: 'Women Enterprise Fund', category: 'loan', amount: 'Up to KSh 500,000', deadline: 'Rolling', desc: 'Low-interest loans specifically for women farmers and agribusiness entrepreneurs.', link: 'https://www.wef.co.ke', eligibility: 'Women farmers and agribusiness owners', status: 'open' },
-    { id: 6, title: 'USAID Kenya Crops & Dairy', org: 'USAID / Kenya Market Systems', category: 'grant', amount: 'Varies by project', deadline: 'Rolling', desc: 'Technical assistance and grants for improving crop production, dairy value chains and market linkages.', link: 'https://www.usaid.gov/kenya', eligibility: 'Cooperatives, farmer groups, agribusinesses', status: 'open' },
-    { id: 7, title: 'Greenhouse Horticulture Grant', org: 'Horticultural Crops Directorate', category: 'subsidy', amount: '50% subsidy on greenhouse', deadline: 'March 2026', desc: 'Subsidised greenhouses for horticultural farmers to boost year-round vegetable production.', link: 'https://www.hcd.go.ke', eligibility: 'Registered horticultural farmers', status: 'open' },
-    { id: 8, title: 'Livestock Insurance Subsidy', org: 'APA Insurance / State Dept Livestock', category: 'subsidy', amount: '50% premium subsidy', deadline: 'Rolling', desc: 'Government-subsidised insurance for cattle, goats, sheep and camels against drought and disease.', link: 'https://www.kilimo.go.ke', eligibility: 'Livestock farmers in ASAL areas', status: 'open' },
-    { id: 9, title: 'IFC Agri-Finance Program', org: 'International Finance Corporation', category: 'loan', amount: 'USD 10,000 - 500,000', deadline: 'Rolling', desc: 'Blended finance and loans for agribusinesses looking to scale operations and access international markets.', link: 'https://www.ifc.org', eligibility: 'Established agribusinesses with 2+ years trading', status: 'open' },
-    { id: 10, title: 'Drip Irrigation Subsidy', org: 'National Irrigation Authority', category: 'subsidy', amount: '40% subsidy on drip kits', deadline: 'June 2026', desc: 'Subsidised drip irrigation kits for smallholder farmers to improve water efficiency and crop yields.', link: 'https://www.irrigation.go.ke', eligibility: 'Smallholder farmers, irrigated agriculture', status: 'open' },
-  ]
+  useEffect(() => {
+    supabase
+      .from('grants')
+      .select('*')
+      .eq('published', true)
+      .then(({ data, error }) => {
+        if (error) console.error('Error loading grants:', error)
+        setGrants(data || [])
+        setLoading(false)
+      })
+  }, [])
+
+  const now      = today()
+  const isClosed = g => !!g.deadline_date && g.deadline_date < now
+  const daysSince = d => d ? Math.floor((Date.now() - new Date(d).getTime()) / 86400000) : null
 
   const categories = [
-    { id: 'all', label: 'All', icon: '📋' },
-    { id: 'grant', label: 'Grants', icon: '🎁' },
-    { id: 'loan', label: 'Loans', icon: '💰' },
-    { id: 'subsidy', label: 'Subsidies', icon: '🏷️' },
+    { id: 'all', label: 'All' }, { id: 'grant', label: 'Grants' },
+    { id: 'loan', label: 'Loans' }, { id: 'subsidy', label: 'Subsidies' },
   ]
+  const catColor = {
+    grant:   { bg: '#e8f5e9', color: '#2e7d32' },
+    loan:    { bg: '#e3f2fd', color: '#0277bd' },
+    subsidy: { bg: '#fff8e1', color: '#f57f17' },
+  }
 
-  const catColor = { grant: { bg: '#e8f5e9', color: '#2e7d32' }, loan: { bg: '#e3f2fd', color: '#0277bd' }, subsidy: { bg: '#fff8e1', color: '#f57f17' } }
-
-  const filtered = grants.filter(g => {
-    const matchCat    = filter === 'all' || g.category === filter
-    const matchSearch = g.title.toLowerCase().includes(search.toLowerCase()) ||
-                        g.org.toLowerCase().includes(search.toLowerCase()) ||
-                        g.desc.toLowerCase().includes(search.toLowerCase())
-    return matchCat && matchSearch
-  })
+  const filtered = grants
+    .filter(g => filter === 'all' || g.category === filter)
+    .filter(g => {
+      const q = search.toLowerCase()
+      return g.title.toLowerCase().includes(q) ||
+             g.org.toLowerCase().includes(q) ||
+             (g.description || '').toLowerCase().includes(q)
+    })
+    .sort((a, b) => Number(isClosed(a)) - Number(isClosed(b)))  // open ones first
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <div>
-          <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>Govt Grants & Programs</h2>
-          <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>Available funding for Kenyan farmers</p>
-        </div>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: '24px', color: '#212121' }}>
+          Govt Grants & Programs
+        </h2>
+        <p style={{ fontSize: '13px', color: '#9e9e9e', marginTop: '3px' }}>
+          Funding programmes checked by the AgriMateKE team
+        </p>
       </div>
 
-      <div style={{ background: '#e8f5e9', border: '1px solid #c8e6c9', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span style={{ fontSize: '20px' }}>💡</span>
-        <div style={{ fontSize: '13px', color: '#2e7d32' }}>Always verify program status directly with the organisation before applying. Ask Shamba Bot for help with applications!</div>
+      <div style={{ background: '#e8f5e9', border: '1px solid #c8e6c9', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', fontSize: '13px', color: '#2e7d32' }}>
+        Each programme shows the date we last checked it. Always confirm the details with the organisation before applying.
       </div>
 
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍  Search grants, loans and subsidies..." style={{ ...inputStyle, fontSize: '14px', padding: '12px 16px', marginBottom: '16px' }} />
+      <input
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder="Search grants, loans and subsidies..."
+        style={{ ...inputStyle, fontSize: '14px', padding: '12px 16px', marginBottom: '16px' }}
+      />
 
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '20px' }}>
         {categories.map(cat => (
-          <button key={cat.id} onClick={() => setFilter(cat.id)} style={{ padding: '7px 14px', borderRadius: '99px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: 'none', fontFamily: 'Outfit, sans-serif', background: filter === cat.id ? '#2e7d32' : '#f5f5f5', color: filter === cat.id ? 'white' : '#616161' }}>
-            {cat.icon} {cat.label}
+          <button key={cat.id} onClick={() => setFilter(cat.id)} style={{
+            padding: '7px 14px', borderRadius: '99px', fontSize: '13px', fontWeight: '600',
+            cursor: 'pointer', border: 'none', fontFamily: 'Outfit, sans-serif',
+            background: filter === cat.id ? '#2e7d32' : '#f5f5f5',
+            color: filter === cat.id ? 'white' : '#616161'
+          }}>
+            {cat.label}
           </button>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '14px' }}>
-        {filtered.length === 0 ? (
-          <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', border: '1px solid #eeeeee', gridColumn: '1 / -1' }}>
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>📋</div>
-            <div style={{ fontSize: '15px', color: '#9e9e9e' }}>No programs found for that search</div>
+      {loading && <div style={{ textAlign: 'center', padding: '40px', color: '#9e9e9e' }}>Loading programmes...</div>}
+
+      {!loading && filtered.length === 0 && (
+        <div style={{ background: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', border: '1px solid #eeeeee' }}>
+          <div style={{ fontSize: '15px', fontWeight: '600', color: '#424242', marginBottom: '6px' }}>
+            {grants.length === 0 ? 'Programmes are being verified' : 'No programmes match your search'}
           </div>
-        ) : filtered.map(grant => (
-          <div key={grant.id} style={{ background: 'white', borderRadius: '14px', padding: '20px', border: '1px solid #eeeeee', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '15px', fontWeight: '700', color: '#212121', marginBottom: '4px' }}>{grant.title}</div>
-                <div style={{ fontSize: '12px', color: '#9e9e9e' }}>{grant.org}</div>
-              </div>
-              <span style={{ fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '99px', background: catColor[grant.category]?.bg, color: catColor[grant.category]?.color, whiteSpace: 'nowrap' }}>
-                {grant.category.charAt(0).toUpperCase() + grant.category.slice(1)}
-              </span>
-            </div>
-
-            <div style={{ fontSize: '13px', color: '#616161', lineHeight: 1.6 }}>{grant.desc}</div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '10px' }}>
-                <div style={{ fontSize: '10px', color: '#9e9e9e', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Amount</div>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#2e7d32', marginTop: '3px' }}>{grant.amount}</div>
-              </div>
-              <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '10px' }}>
-                <div style={{ fontSize: '10px', color: '#9e9e9e', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Deadline</div>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#212121', marginTop: '3px' }}>{grant.deadline}</div>
-              </div>
-            </div>
-
-            <div style={{ background: '#f5f5f5', borderRadius: '8px', padding: '10px' }}>
-              <div style={{ fontSize: '10px', color: '#9e9e9e', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '3px' }}>Eligibility</div>
-              <div style={{ fontSize: '12px', color: '#616161' }}>{grant.eligibility}</div>
-            </div>
-
-            <a href={grant.link} target="_blank" rel="noreferrer" style={{ display: 'block', padding: '10px', background: '#2e7d32', color: 'white', borderRadius: '8px', textAlign: 'center', textDecoration: 'none', fontSize: '13px', fontWeight: '600', fontFamily: 'Outfit, sans-serif' }}>
-              🔗 Apply / Learn More
-            </a>
+          <div style={{ fontSize: '13px', color: '#9e9e9e' }}>
+            {grants.length === 0 ? 'Check back soon. We only list programmes we have confirmed.' : 'Try a different search or filter.'}
           </div>
-        ))}
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '14px' }}>
+        {filtered.map(g => {
+          const closed = isClosed(g)
+          const age    = daysSince(g.last_verified)
+          const stale  = age !== null && age > 90
+          return (
+            <div key={g.id} style={{
+              background: 'white', borderRadius: '14px', padding: '20px',
+              border: '1px solid #eeeeee', opacity: closed ? 0.6 : 1,
+              display: 'flex', flexDirection: 'column', gap: '10px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#212121' }}>{g.title}</div>
+                  <div style={{ fontSize: '12px', color: '#9e9e9e' }}>{g.org}</div>
+                </div>
+                <span style={{
+                  fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '99px',
+                  height: 'fit-content', whiteSpace: 'nowrap',
+                  background: closed ? '#eeeeee' : catColor[g.category]?.bg,
+                  color: closed ? '#757575' : catColor[g.category]?.color
+                }}>
+                  {closed ? 'Closed' : (g.category.charAt(0).toUpperCase() + g.category.slice(1))}
+                </span>
+              </div>
+
+              {g.description && <div style={{ fontSize: '13px', color: '#616161', lineHeight: 1.6 }}>{g.description}</div>}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '10px' }}>
+                  <div style={{ fontSize: '10px', color: '#9e9e9e', fontWeight: '600', textTransform: 'uppercase' }}>Amount</div>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#2e7d32', marginTop: '3px' }}>{g.amount || 'See organisation'}</div>
+                </div>
+                <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '10px' }}>
+                  <div style={{ fontSize: '10px', color: '#9e9e9e', fontWeight: '600', textTransform: 'uppercase' }}>Deadline</div>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#212121', marginTop: '3px' }}>
+                    {g.deadline_date || g.deadline_text || 'See organisation'}
+                  </div>
+                </div>
+              </div>
+
+              {g.eligibility && (
+                <div style={{ background: '#f5f5f5', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#616161' }}>
+                  <strong>Eligibility:</strong> {g.eligibility}
+                </div>
+              )}
+
+              <div style={{ fontSize: '11px', color: stale ? '#e65100' : '#9e9e9e' }}>
+                Last checked: {g.last_verified || 'not recorded'}{stale ? ' (may be outdated)' : ''}
+              </div>
+
+              {g.link && !closed && (
+                <a href={g.link} target="_blank" rel="noreferrer" style={{
+                  display: 'block', padding: '10px', background: '#2e7d32', color: 'white',
+                  borderRadius: '8px', textAlign: 'center', textDecoration: 'none',
+                  fontSize: '13px', fontWeight: '600'
+                }}>
+                  Visit official page
+                </a>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -2551,6 +2605,160 @@ const counties = ['Baringo','Bomet','Bungoma','Busia','Elgeyo Marakwet','Embu','
     </div>
   )
 }
+
+function AdminGrants() {
+  const empty = { title: '', org: '', category: 'grant', amount: '', deadline_text: '', deadline_date: '', eligibility: '', description: '', link: '' }
+  const [grants,    setGrants]    = useState([])
+  const [loading,   setLoading]   = useState(true)
+  const [form,      setForm]      = useState(empty)
+  const [editingId, setEditingId] = useState(null)
+  const [showForm,  setShowForm]  = useState(false)
+
+  useEffect(() => { load() }, [])
+
+  async function load() {
+    const { data, error } = await supabase.from('grants').select('*').order('created_at', { ascending: false })
+    if (error) console.error('Error loading grants:', error)
+    setGrants(data || [])
+    setLoading(false)
+  }
+
+  async function save() {
+    if (!form.title.trim() || !form.org.trim()) return alert('Title and organisation are required')
+    const row = {
+      title: form.title.trim(), org: form.org.trim(), category: form.category,
+      amount: form.amount || null, deadline_text: form.deadline_text || null,
+      deadline_date: form.deadline_date || null, eligibility: form.eligibility || null,
+      description: form.description || null, link: form.link || null,
+    }
+    const { error } = editingId
+      ? await supabase.from('grants').update(row).eq('id', editingId)
+      : await supabase.from('grants').insert(row)
+    if (error) return alert('Failed to save: ' + error.message)
+    setForm(empty); setEditingId(null); setShowForm(false); load()
+  }
+
+  async function patch(id, changes) {
+    const { error } = await supabase.from('grants').update(changes).eq('id', id)
+    if (error) return alert('Failed: ' + error.message)
+    load()
+  }
+
+  async function remove(id) {
+    if (!window.confirm('Delete this grant permanently?')) return
+    const { error } = await supabase.from('grants').delete().eq('id', id)
+    if (error) return alert('Failed: ' + error.message)
+    load()
+  }
+
+  function startEdit(g) {
+    setEditingId(g.id)
+    setForm({
+      title: g.title || '', org: g.org || '', category: g.category || 'grant',
+      amount: g.amount || '', deadline_text: g.deadline_text || '',
+      deadline_date: g.deadline_date || '', eligibility: g.eligibility || '',
+      description: g.description || '', link: g.link || '',
+    })
+    setShowForm(true)
+  }
+
+  const fields = [
+    ['Title *', 'title'], ['Organisation *', 'org'], ['Amount', 'amount'],
+    ['Deadline (text, e.g. Rolling)', 'deadline_text'], ['Official link', 'link'],
+  ]
+
+  return (
+    <div style={{ background: 'white', borderRadius: '16px', padding: '20px', border: '1px solid #eeeeee', marginTop: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ fontSize: '15px', fontWeight: '600', color: '#212121' }}>Grants & Programmes ({grants.length})</div>
+        <button onClick={() => { setForm(empty); setEditingId(null); setShowForm(true) }} style={{
+          padding: '8px 16px', background: '#2e7d32', color: 'white', border: 'none',
+          borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+        }}>
+          Add grant
+        </button>
+      </div>
+
+      {showForm && (
+        <div style={{ background: '#f9fafb', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+            {fields.map(([label, key]) => (
+              <div key={key}>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#616161', display: 'block', marginBottom: '4px' }}>{label}</label>
+                <input value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} style={inputStyle} />
+              </div>
+            ))}
+            <div>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: '#616161', display: 'block', marginBottom: '4px' }}>Category</label>
+              <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} style={inputStyle}>
+                <option value="grant">Grant</option>
+                <option value="loan">Loan</option>
+                <option value="subsidy">Subsidy</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: '#616161', display: 'block', marginBottom: '4px' }}>Closing date (if known)</label>
+              <input type="date" value={form.deadline_date} onChange={e => setForm(f => ({ ...f, deadline_date: e.target.value }))} style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ marginTop: '10px' }}>
+            <label style={{ fontSize: '12px', fontWeight: '600', color: '#616161', display: 'block', marginBottom: '4px' }}>Who can apply</label>
+            <input value={form.eligibility} onChange={e => setForm(f => ({ ...f, eligibility: e.target.value }))} style={inputStyle} />
+          </div>
+          <div style={{ marginTop: '10px' }}>
+            <label style={{ fontSize: '12px', fontWeight: '600', color: '#616161', display: 'block', marginBottom: '4px' }}>Short description</label>
+            <textarea rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} style={{ ...inputStyle, resize: 'vertical' }} />
+          </div>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+            <button onClick={save} style={{ padding: '9px 18px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+              {editingId ? 'Save changes' : 'Save as draft'}
+            </button>
+            <button onClick={() => { setShowForm(false); setEditingId(null); setForm(empty) }} style={{ padding: '9px 18px', background: 'transparent', color: '#616161', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading && <div style={{ color: '#9e9e9e', fontSize: '13px' }}>Loading...</div>}
+      {!loading && grants.length === 0 && (
+        <div style={{ color: '#9e9e9e', fontSize: '13px', padding: '16px 0' }}>No grants yet. Add your first one above.</div>
+      )}
+
+      {grants.map(g => (
+        <div key={g.id} style={{ border: '1px solid #eeeeee', borderRadius: '10px', padding: '12px 14px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: '#212121' }}>{g.title}</div>
+              <div style={{ fontSize: '12px', color: '#9e9e9e' }}>
+                {g.org} · Last checked: {g.last_verified || 'never'}
+              </div>
+            </div>
+            <span style={{
+              fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '99px', height: 'fit-content',
+              background: g.published ? '#e8f5e9' : '#fff3e0', color: g.published ? '#2e7d32' : '#e65100'
+            }}>
+              {g.published ? 'Published' : 'Draft'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+            <button onClick={() => startEdit(g)} style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid #e0e0e0', background: 'white', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Edit</button>
+            {g.published ? (
+              <>
+                <button onClick={() => patch(g.id, { last_verified: today() })} style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid #c8e6c9', background: '#e8f5e9', color: '#2e7d32', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Re-checked today</button>
+                <button onClick={() => patch(g.id, { published: false })} style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid #e0e0e0', background: 'white', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Unpublish</button>
+              </>
+            ) : (
+              <button onClick={() => patch(g.id, { published: true, last_verified: today() })} style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px', border: 'none', background: '#2e7d32', color: 'white', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Verify & publish</button>
+            )}
+            <button onClick={() => remove(g.id)} style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid #ffcdd2', background: '#ffebee', color: '#c62828', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Delete</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 
 // ─────────────────────────────────────────────────────────
 //  ADMIN DASHBOARD
@@ -2693,6 +2901,7 @@ function AdminDashboard({ user }) {
           </div>
         ))}
       </div>
+      <AdminGrants />
     </div>
   )
 }
