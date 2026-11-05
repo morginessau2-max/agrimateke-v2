@@ -29,6 +29,13 @@ import {
 // ─────────────────────────────────────────────────────────
 //  HELPERS
 // ─────────────────────────────────────────────────────────
+function timeAgo(iso) {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
+  if (days <= 0) return 'today'
+  if (days === 1) return 'yesterday'
+  return `${days} days ago`
+}
+
 function fmt(n) { return 'KSh ' + Math.abs(n).toLocaleString() }
 function nid() { return Date.now() + Math.random() }
 function today() { return new Date().toISOString().slice(0, 10) }
@@ -1515,7 +1522,7 @@ function Weather() {
 // ─────────────────────────────────────────────────────────
 //  MARKET PRICES
 // ─────────────────────────────────────────────────────────
-function MarketPrices({ user }) {
+function MarketPrices({ user, isAdmin }) {
   const [search,       setSearch]       = useState('')
   const [category,     setCategory]     = useState('all')
   const [showForm,     setShowForm]     = useState(false)
@@ -1530,11 +1537,13 @@ function MarketPrices({ user }) {
 
   async function fetchCommunityPrices() {
     try {
-      const { data, error } = await supabase
-        .from('market_prices')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50)
+      const cutoff = new Date(Date.now() - 14 * 86400000).toISOString()
+const { data, error } = await supabase
+  .from('market_prices')
+  .select('*')
+  .gte('created_at', cutoff)
+  .order('created_at', { ascending: false })
+  .limit(50)
 
       if (error) throw error
       setSubmitted(data || [])
@@ -1576,6 +1585,13 @@ function MarketPrices({ user }) {
       setSubmitting(false)
     }
   }
+
+  async function removePrice(id) {
+  if (!window.confirm('Delete this price report?')) return
+  const { error } = await supabase.from('market_prices').delete().eq('id', id)
+  if (error) return alert('Failed: ' + error.message)
+  setSubmitted(prev => prev.filter(p => p.id !== id))
+}
 
   const basePrices = [
     { id: 'b1',  name: 'Maize (Dry)',    category: 'cereals',    price: 45,   unit: 'kg',    market: 'Wakulima Market',  county: 'Nairobi',     trend: 'up',     change: 5  },
@@ -1672,8 +1688,9 @@ function MarketPrices({ user }) {
       }}>
         <span style={{ fontSize: '20px' }}>💡</span>
         <div style={{ fontSize: '13px', color: '#2e7d32' }}>
-          Baseline prices are indicative. Community prices are submitted by real farmers.
-          Submit a price to help others get accurate local rates! 🌱
+          Rows marked <strong>Indicative</strong> are rough estimates, not live prices. Rows marked with a date are real reports from farmers. For official figures, check{' '}
+          <a href="https://kamis.kilimo.go.ke" target="_blank" rel="noreferrer" style={{ color: '#1b5e20', fontWeight: '700' }}>KAMIS</a>{' '}
+          (Ministry of Agriculture).
         </div>
       </div>
 
@@ -1796,7 +1813,7 @@ function MarketPrices({ user }) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#fafafa' }}>
-                  {['Crop / Product', 'Price', 'Unit', 'Market', 'County', 'Trend'].map(h => (
+                  {['Crop / Product', 'Price', 'Unit', 'Market', 'County', 'Trend', ''].map(h => (
                     <th key={h} style={{
                       padding: '10px 14px', textAlign: 'left',
                       fontSize: '11px', fontWeight: '700',
@@ -1815,25 +1832,72 @@ function MarketPrices({ user }) {
                     <tr key={p.id} style={{ background: p.community ? '#f9fbe7' : 'white' }}>
                       <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '600', color: '#212121', borderBottom: '1px solid #f5f5f5' }}>
                         {p.name}
-                        {p.community && (
-                          <span style={{
-                            fontSize: '10px', background: '#f9fbe7',
-                            color: '#827717', padding: '1px 6px',
-                            borderRadius: '99px', marginLeft: '6px',
-                            fontWeight: '700'
-                          }}>
-                            👥 Community
+                        {p.community ? (
+                          <span style={{ fontSize: '10px', background: '#f9fbe7', color: '#827717', padding: '1px 6px', borderRadius: '99px', marginLeft: '6px', fontWeight: '700' }}>
+                           Reported {timeAgo(p.created_at)}
                           </span>
-                        )}
+                           ) : (
+                          <span style={{ fontSize: '10px', background: '#f5f5f5', color: '#9e9e9e', padding: '1px 6px', borderRadius: '99px', marginLeft: '6px', fontWeight: '700' }}>
+                          Indicative
+                        </span>
+                     )}
                       </td>
+                      <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
+                      {isAdmin && p.community && (
+                       <button onClick={() => removePrice(p.id)} style={{
+                       background: '#ffebee', color: '#c62828', border: 'none',
+                       borderRadius: '6px', padding: '4px 8px', fontSize: '11px',
+                       cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+                       }}>
+                       Delete
+                       </button>
+                       )}
+                      </td>
+
+
+
                       <td style={{ padding: '12px 14px', fontSize: '14px', fontWeight: '700', color: '#2e7d32', borderBottom: '1px solid #f5f5f5' }}>
                         KSh {Number(p.price).toLocaleString()}
                       </td>
+                      <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
+                       {isAdmin && p.community && (
+                        <button onClick={() => removePrice(p.id)} style={{
+                         background: '#ffebee', color: '#c62828', border: 'none',
+                         borderRadius: '6px', padding: '4px 8px', fontSize: '11px',
+                         cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+                         }}>
+                         Delete
+                         </button>
+                         )}
+                      </td>
+
                       <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>
                         per {p.unit}
                       </td>
+                      <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
+                      {isAdmin && p.community && (
+                       <button onClick={() => removePrice(p.id)} style={{
+                        background: '#ffebee', color: '#c62828', border: 'none',
+                        borderRadius: '6px', padding: '4px 8px', fontSize: '11px',
+                        cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+                      }}>
+                      Delete
+                      </button>
+                      )}
+                     </td>
                       <td style={{ padding: '12px 14px', fontSize: '13px', color: '#616161', borderBottom: '1px solid #f5f5f5' }}>
                         {p.market}
+                      </td>
+                      <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
+                        {isAdmin && p.community && (
+                        <button onClick={() => removePrice(p.id)} style={{
+                         background: '#ffebee', color: '#c62828', border: 'none',
+                          borderRadius: '6px', padding: '4px 8px', fontSize: '11px',
+                          cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+                         }}>
+                        Delete
+                        </button>
+                          )}
                       </td>
                       <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
                         <span style={{
@@ -1844,9 +1908,31 @@ function MarketPrices({ user }) {
                           {p.county}
                         </span>
                       </td>
+                      <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
+                          {isAdmin && p.community && (
+                          <button onClick={() => removePrice(p.id)} style={{
+                           background: '#ffebee', color: '#c62828', border: 'none',
+                           borderRadius: '6px', padding: '4px 8px', fontSize: '11px',
+                           cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+                           }}>
+                           Delete
+                          </button>
+                       )}
+                      </td>
                       <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '700', color: t.color, borderBottom: '1px solid #f5f5f5' }}>
                         {t.icon} {t.label}
                       </td>
+                      <td style={{ padding: '12px 14px', borderBottom: '1px solid #f5f5f5' }}>
+                         {isAdmin && p.community && (
+                         <button onClick={() => removePrice(p.id)} style={{
+                          background: '#ffebee', color: '#c62828', border: 'none',
+                          borderRadius: '6px', padding: '4px 8px', fontSize: '11px',
+                          cursor: 'pointer', fontFamily: 'Outfit, sans-serif'
+                        }}>
+                        Delete
+                        </button>
+                         )}
+                        </td>
                     </tr>
                   )
                 })}
@@ -3076,7 +3162,7 @@ if (user && user.email_confirmed_at && inviteToken) {
       )
       case 'admin':     return wrap (<AdminDashboard user={user} />)
       case 'weather':   return wrap (<Weather />)
-      case 'market':    return wrap (<MarketPrices user={user}/>)
+      case 'market':    return wrap (<MarketPrices user={user} isAdmin={profile?.is_admin}/>)
       case 'shamba':    return wrap (<ShambaBot crops={crops} tasks={tasks} livestock={livestock} sales={sales} expenses={expenses} userName={userName} isMobile={isMobile} isFree={isFree} userId={user.id} />)
       case 'vets':      return wrap (<VetDirectory user={user} profile={profile} />)
       case 'grants':    return wrap (<GovtGrants />)

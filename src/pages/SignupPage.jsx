@@ -42,30 +42,55 @@ function validateStep1() {
   return null
 }
 
-  async function handleSignup() {
-    if (!form.county) return setError('Please select your county')
+async function handleSignup() {
+  if (!form.county) return setError('Please select your county')
 
-    setLoading(true)
-    setError('')
-
-    try {
-      await signUp({
-        email:    form.email,
-        password: form.password,
-        fullName: form.fullName,
-        phone:    form.phone,
-      })
-      setSuccess(true)
-    } catch (err) {
-      if(err.message?.includes('already registered') || err.message?.includes('already exists')) {
-        setError('An account with this email  already exists. Please sign in instead.')
-      } else {
-        setError(err.message || 'Signup failed. Please try again.')
-      }
-    } finally {
-      setLoading(false)
-    }
+  // Phone is optional, but if entered it should look like a Kenyan number
+  const phone = form.phone.replace(/[\s-]/g, '')
+  if (phone && !/^(?:\+254|254|0)[17]\d{8}$/.test(phone)) {
+    return setError('Enter a valid Kenyan phone number, for example 0712 345 678')
   }
+
+  setLoading(true)
+  setError('')
+
+  try {
+    const data = await signUp({
+      email:    form.email.trim().toLowerCase(),
+      password: form.password,
+      fullName: form.fullName.trim(),
+      phone,
+      county:   form.county,
+      farmName: form.farmName.trim(),
+    })
+
+    // When the email already exists, Supabase can return a user with no identities
+    if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      setError('An account with this email already exists. Please sign in instead.')
+      return
+    }
+
+    setSuccess(true)
+  } catch (err) {
+    console.error('Signup error:', err)
+    const msg = (err?.message || '').toLowerCase()
+
+    if (msg.includes('already registered') || msg.includes('already been registered')) {
+      setError('An account with this email already exists. Please sign in instead.')
+    } else if (msg.includes('security purposes')) {
+      setError('Please wait a minute before trying again.')
+    } else if (msg.includes('rate limit') || msg.includes('not authorized') || msg.includes('sending')) {
+      setError('We could not send your confirmation email right now. Please try again in a few minutes.')
+    } else if (msg.includes('password')) {
+      setError(err.message)
+    } else {
+      setError('We could not create your account right now. Please check your connection and try again in a few minutes.')
+    }
+  } finally {
+    setLoading(false)
+  }
+}
+  
 
   // Success screen
   if (success) {

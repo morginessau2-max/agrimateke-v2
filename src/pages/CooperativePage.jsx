@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { usePlan } from '../hooks/usePlan'
 
 export default function CooperativePage({ onNavigate }) {
   const { user, profile } = useAuth()
@@ -13,7 +14,8 @@ export default function CooperativePage({ onNavigate }) {
   const [inviteLink, setInviteLink]   = useState('')
   const [generating, setGenerating]   = useState(false)
   const [selectedFarmer, setSelectedFarmer] = useState(null)
-
+  const { isCooperative } = usePlan()
+  const [invites, setInvites] = useState([])
   const counties = [
     'Baringo','Bomet','Bungoma','Busia','Elgeyo Marakwet','Embu','Garissa',
     'Homa Bay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi',
@@ -45,6 +47,7 @@ export default function CooperativePage({ onNavigate }) {
       if (coop) {
         setCooperative(coop)
         await fetchMembers(coop.id)
+        await fetchInvites(coop.id)
         setView('dashboard')
       } else {
         // Check if user is a member
@@ -112,7 +115,7 @@ export default function CooperativePage({ onNavigate }) {
     console.error('Error fetching members:', err)
   }
 }
-
+if (!isCooperative) return alert('Creating a cooperative needs the Cooperative Pro plan (KSh 8,000/month).')
   async function handleCreateCoop() {
     if (!form.name.trim()) return alert('Cooperative name is required')
     if (!form.county)      return alert('County is required')
@@ -157,12 +160,53 @@ export default function CooperativePage({ onNavigate }) {
       if (error) throw error
       const link = `${window.location.origin}?invite=${token}`
       setInviteLink(link)
+      fetchInvites(cooperative.id)  // Refresh the list of invites
     } catch (err) {
       alert('Failed to generate invite: ' + err.message)
     } finally {
       setGenerating(false)
     }
   }
+
+  async function fetchInvites(coopId) {
+  const { data, error } = await supabase
+    .from('cooperative_invites')
+    .select('*')
+    .eq('cooperative_id', coopId)
+    .eq('used', false)
+    .order('created_at', { ascending: false })
+  if (error) { console.error('Error fetching invites:', error); return }
+  setInvites(data || [])
+}
+
+function copyInviteLink(token) {
+  navigator.clipboard.writeText(`${window.location.origin}?invite=${token}`)
+  alert('Invite link copied to clipboard!')
+}
+
+async function revokeInvite(inv) {
+  if (!window.confirm('Cancel this invite? The link will stop working immediately.')) return
+  const { error } = await supabase.from('cooperative_invites').delete().eq('id', inv.id)
+  if (error) return alert('Failed: ' + error.message)
+  setInvites(prev => prev.filter(i => i.id !== inv.id))
+  if (inviteLink.includes(inv.token)) setInviteLink('')
+}
+
+async function removeMember(farmer) {
+  if (!window.confirm(`Remove ${farmer.full_name || 'this farmer'} from the cooperative? They keep their own account and data, but you will no longer see it.`)) return
+  const { data, error } = await supabase.rpc('remove_cooperative_member', { member_id: farmer.id })
+  if (error || data?.error) return alert('Failed: ' + (error?.message || data.error))
+  setMembers(prev => prev.filter(m => m.id !== farmer.id))
+  setSelectedFarmer(null)
+}
+
+async function leaveCooperative() {
+  if (!window.confirm(`Leave ${cooperative?.name}? Your head will no longer see your farm data.`)) return
+  const { data, error } = await supabase.rpc('leave_cooperative')
+  if (error || data?.error) return alert('Failed: ' + (error?.message || data.error))
+  setCooperative(null)
+  setView('none')
+}
 
   function copyInvite() {
     navigator.clipboard.writeText(inviteLink)
@@ -225,6 +269,14 @@ export default function CooperativePage({ onNavigate }) {
               Create a cooperative and invite up to 19 farmers.
               Monitor all members from one dashboard.
             </div>
+
+             {!isCooperative && (
+              <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: '#e65100', marginBottom: '12px' }}>
+              This needs the Cooperative Pro plan. Members who join through an invite pay nothing.
+              </div>
+              )}
+
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
               <div>
                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#616161', display: 'block', marginBottom: '6px' }}>
@@ -318,6 +370,11 @@ export default function CooperativePage({ onNavigate }) {
             Your farm data contributes to the cooperative's aggregate reports.
           </div>
         </div>
+        <button
+          onClick={leaveCooperative}
+          style={{ padding: '10px 18px', background: 'transparent', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+          Leave this cooperative
+        </button>
       </div>
     )
   }
@@ -393,6 +450,40 @@ export default function CooperativePage({ onNavigate }) {
           </div>
         </div>
       )}
+
+  {invites.length > 0 && (
+  <div style={{ background: 'white', borderRadius: '16px', padding: '16px 20px', border: '1px solid #eeeeee', marginBottom: '20px' }}>
+    <div style={{ fontSize: '15px', fontWeight: '600', color: '#212121', marginBottom: '4px' }}>
+      Pending invites ({invites.length})
+    </div>
+    <div style={{ fontSize: '11px', color: '#9e9e9e', marginBottom: '10px' }}>
+      Pending invites don't reserve a slot. The 19-member limit is checked when someone accepts.
+    </div>
+    {invites.map(inv => {
+      const expired = inv.expires_at && new Date(inv.expires_at) < new Date()
+      return (
+        <div key={inv.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', padding: '10px 0', borderBottom: '1px solid #f5f5f5' }}>
+          <div>
+            <div style={{ fontSize: '13px', color: '#424242', fontFamily: 'monospace' }}>...{inv.token.slice(-8)}</div>
+            <div style={{ fontSize: '11px', color: expired ? '#c62828' : '#9e9e9e' }}>
+              {expired ? 'Expired' : inv.expires_at ? `Expires ${new Date(inv.expires_at).toLocaleDateString('en-GB')}` : 'No expiry'}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {!expired && (
+              <button onClick={() => copyInviteLink(inv.token)} style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid #c8e6c9', background: '#e8f5e9', color: '#2e7d32', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+                Copy link
+              </button>
+            )}
+            <button onClick={() => revokeInvite(inv)} style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid #ffcdd2', background: '#ffebee', color: '#c62828', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )
+    })}
+  </div>
+)}
 
       {/* Aggregate Metric Cards */}
       <div style={{
@@ -524,16 +615,20 @@ export default function CooperativePage({ onNavigate }) {
               <div style={{ fontSize: '16px', fontWeight: '700', color: '#212121' }}>
                 👨‍🌾 {selectedFarmer.full_name}
               </div>
+             <div style={{ display: 'flex', gap: '8px' }}>
               <button
-                onClick={() => setSelectedFarmer(null)}
-                style={{
-                  background: '#f5f5f5', border: 'none',
-                  borderRadius: '6px', padding: '4px 10px',
-                  fontSize: '12px', cursor: 'pointer',
-                  fontFamily: 'Outfit, sans-serif', color: '#616161'
-                }}>
-                Close ✕
+               onClick={() => removeMember(selectedFarmer)}
+               style={{ background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+               Remove from cooperative
               </button>
+              <button
+                 onClick={() => setSelectedFarmer(null)}
+                 style={{ background: '#f5f5f5', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer', fontFamily: 'Outfit, sans-serif', color: '#616161' }}>
+                 Close
+              </button>
+             </div>
+
+
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
               {[
