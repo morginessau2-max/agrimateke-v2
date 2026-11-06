@@ -77,27 +77,22 @@ async function fetchProfile(userId) {
 
 
 
-  async function signUp({ email, password, fullName, phone }) {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName, phone }
-      }
-    })
-    if (error) throw error
-
-    // Create profile immediately
-    if (data.user) {
-      await supabase.from('profiles').insert({
-        id:        data.user.id,
+ async function signUp({ email, password, fullName, phone, county, farmName }) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
         full_name: fullName,
-        phone:     phone,
-        plan:      'free'
-      })
+        phone,
+        county,
+        farm_name: farmName,
+      }
     }
-    return data
-  }
+  })
+  if (error) throw error
+  return data
+}
 
   async function signIn({ email, password }) {
     const { data, error } = await supabase.auth.signInWithPassword({
